@@ -1,0 +1,15 @@
+# Secrets — never commit the real .env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Tooling caches
+.poetry-cache/
+
+# OS
+.DS_Store

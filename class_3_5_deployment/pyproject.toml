@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "class-3-5-deployment"
+version = "0.1.0"
+description = "Local environment for the Qdrant/LangChain notebook."
+requires-python = ">=3.10"
+dependencies = [
+  "langchain",
+  "langchain-openai",
+  "langchain-qdrant",
+  "langchain-community",
+  "langchain-text-splitters",
+  "qdrant-client",
+  "anthropic>=0.97.0",
+  "python-dotenv>=1.0.0",
+  "ipykernel>=6.29",
+]
+
+[tool.uv]
+
+[tool.hatch.build.targets.wheel]
+packages = ["class_3_5_deployment"]

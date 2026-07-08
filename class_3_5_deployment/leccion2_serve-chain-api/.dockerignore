@@ -1,0 +1,16 @@
+# Keep the Docker build context small and reproducible.
+# The Dockerfile installs dependencies fresh, so none of the local dev cruft
+# below needs to be copied into the image.
+
+# Local virtual environment (deps are reinstalled inside the image)
+.venv/**/*
+
+# Python caches
+**/__pycache__
+**/*.pyc
+
+# Secrets and local config (inject via `fly secrets` / `--env-file` instead)
+.env
+
+# fly.io config (not needed inside the image)
+fly.toml

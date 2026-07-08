@@ -1,0 +1,31 @@
+# --- Secrets: NEVER commit a real .env (only .env.example is tracked) ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# --- Tooling / editor caches ---
+.poetry-cache/
+.idea/
+.vscode/
+*.egg-info/
+
+# --- Managed Agents local state (account-specific ids) ---
+**/agent_config.json
+
+# --- Class artifacts: keep the folder, ignore its contents ---
+**/outputs/*
+!**/outputs/.gitkeep
+
+# --- OS / Office ---
+.DS_Store
+Thumbs.db
+~$*.pptx
+~$*.docx
+~$*.xlsx

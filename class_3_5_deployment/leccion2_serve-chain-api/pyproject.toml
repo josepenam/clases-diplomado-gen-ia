@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "serve-chain-api"
+version = "2.0.0"
+description = "Serve a simple LangChain (LCEL) summarization chain as an API with FastAPI."
+authors = ["Jose Manuel Peña <jmpena@aaisa.net>"]
+readme = "README.md"
+packages = [
+    { include = "app" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.14"
+fastapi = ">=0.115"
+uvicorn = { extras = ["standard"], version = ">=0.30" }
+langchain-core = ">=1.1"
+langchain-openai = ">=1.1"
+python-dotenv = ">=1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
