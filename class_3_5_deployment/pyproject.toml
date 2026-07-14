@@ -17,6 +17,7 @@ dependencies = [
   "anthropic>=0.97.0",
   "python-dotenv>=1.0.0",
   "ipykernel>=6.29",
+  "langsmith>=0.9.5",
 ]
 
 [tool.uv]

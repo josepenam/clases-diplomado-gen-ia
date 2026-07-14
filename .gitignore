@@ -12,6 +12,8 @@ venv/
 
 # --- Tooling / editor caches ---
 .poetry-cache/
+.uv-cache/
+uv-cache/
 .idea/
 .vscode/
 *.egg-info/

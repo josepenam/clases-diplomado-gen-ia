@@ -21,6 +21,24 @@ from pathlib import Path
 import anthropic
 from dotenv import dotenv_values
 
+# LangSmith es opcional: si no está instalado (o el tracing está apagado) el
+# agente funciona igual. `traceable` se vuelve un decorador no-op.
+try:
+    from langsmith import traceable
+    from langsmith.run_helpers import get_current_run_tree
+except Exception:  # pragma: no cover - langsmith no instalado
+    def traceable(*d_args, **d_kwargs):
+        if len(d_args) == 1 and callable(d_args[0]) and not d_kwargs:
+            return d_args[0]  # uso como @traceable sin paréntesis
+
+        def _decorator(func):
+            return func
+
+        return _decorator
+
+    def get_current_run_tree():
+        return None
+
 HERE = Path(__file__).parent
 
 
@@ -210,6 +228,72 @@ def _text(content) -> str:
     if not content:
         return ""
     return "".join(getattr(b, "text", "") for b in content if getattr(b, "type", None) == "text")
+
+
+# ── Tracing con LangSmith → base para correr evals ───────────────────────────
+def _attach_run_metadata(**kwargs) -> None:
+    """Cuelga metadata (session_id, tool_calls, model…) del run traceado actual.
+
+    No-op si LangSmith no está activo. La metadata queda visible en cada run de
+    LangSmith y sirve para filtrar/segmentar experimentos.
+    """
+    try:
+        run = get_current_run_tree()
+        if run is not None:
+            run.metadata.update({k: v for k, v in kwargs.items() if v is not None})
+    except Exception:  # pragma: no cover - nunca romper la corrida por el tracing
+        pass
+
+
+@traceable(run_type="chain", name="ask_agent")
+def ask_agent(
+    question: str,
+    *,
+    agent_id: str | None = None,
+    environment_id: str | None = None,
+    title: str = "Eval turn",
+    cleanup: bool = True,
+) -> dict:
+    """Una sola pregunta contra el agente, en una **sesión nueva y aislada**.
+
+    A diferencia de `print_reply` (que conversa sobre una sesión de larga vida),
+    cada llamada abre su propia sesión: los turnos son independientes, que es la
+    base correcta para evaluar (un ejemplo no contamina a otro).
+
+    Decorada con `@traceable`, por lo que cada llamada aparece como un run en tu
+    proyecto de LangSmith (con la pregunta como input y el dict de salida como
+    output). Ese mismo dict es el que espera `langsmith.evaluate` como target.
+
+    Devuelve `{"output": <texto>, "tool_calls": [...], "session_id": ...}`.
+    """
+    if agent_id is None or environment_id is None:
+        cfg = provision()
+        agent_id = agent_id or cfg["agent_id"]
+        environment_id = environment_id or cfg["environment_id"]
+
+    session_id = start_session(agent_id, environment_id, title=title)
+    text = ""
+    tool_calls: list[str] = []
+    for ev in send_and_stream(session_id, question):
+        if ev.type == "agent.message":
+            text += _text(ev.content)
+        elif ev.type == "agent.tool_use":
+            tool_calls.append(ev.name)
+
+    _attach_run_metadata(
+        session_id=session_id,
+        agent_id=agent_id,
+        model=MODEL,
+        tool_calls=tool_calls,
+    )
+
+    if cleanup:
+        try:
+            delete_session(session_id)
+        except Exception:  # pragma: no cover
+            pass
+
+    return {"output": text.strip(), "tool_calls": tool_calls, "session_id": session_id}
 
 
 if __name__ == "__main__":
