@@ -149,8 +149,24 @@ ol.steps li::before{content:counter(s,decimal-leading-zero);
   box-shadow:0 0 0 2px var(--st), var(--shadow)}
 .pstage[aria-pressed="true"] .pn{color:var(--st)}
 .pn{font-family:var(--f-data); font-size:9.5px; color:var(--faint)}
-.pl{font:600 11.5px/1.14 var(--f-disp); letter-spacing:.055em; text-transform:uppercase}
+.pl{font:600 11.5px/1.14 var(--f-disp); letter-spacing:.055em; text-transform:uppercase;
+  padding-right:2.4rem}
 .pm{font-family:var(--f-data); font-size:9.5px; color:var(--muted)}
+/* sustrato: dónde se EJECUTA la etapa (distinto de qué la limita) */
+.sb{position:absolute; right:5px; top:5px; font-family:var(--f-data); font-size:8px;
+  letter-spacing:.05em; padding:.06rem .26rem; border-radius:2px; line-height:1.35;
+  border:1px solid var(--sc); color:var(--sc)}
+.sb.fill{background:var(--sc); color:var(--panel); border-color:var(--sc)}
+.subs{display:flex; flex-wrap:wrap; gap:.4rem .9rem; margin:.35rem 0 0;
+  align-items:baseline}
+.subs .sd{display:flex; gap:.4rem; align-items:baseline; font-size:11.5px;
+  color:var(--muted)}
+.subs .sd i{font-family:var(--f-data); font-size:8px; font-style:normal;
+  letter-spacing:.05em; padding:.06rem .26rem; border-radius:2px;
+  border:1px solid currentColor}
+.subs .sd i.fill{background:currentColor}
+.subs .tally{font-family:var(--f-data); font-size:11px; color:var(--t3);
+  border-left:1px solid var(--line); padding-left:.9rem}
 /* rótulos y decoración del diagrama */
 .flow .band{position:absolute; font:600 9.5px/1 var(--f-disp); letter-spacing:.15em;
   text-transform:uppercase; color:var(--faint); white-space:nowrap}
@@ -369,12 +385,15 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
 <!-- ══════════════════ 02 ══════════════════ -->
 <section class="view" id="v-ciclo" role="tabpanel">
   <h2 class="vt">Ciclo de vida de una solicitud</h2>
-  <p class="lede">Haz clic en cualquier etapa. El color indica <strong>qué recurso la
-  limita</strong>: no todas compiten por lo mismo, y ahí está la raíz de casi toda la
-  complejidad de un sistema de inferencia.</p>
+  <p class="lede">Haz clic en cualquier etapa. El color de la izquierda indica <strong>qué
+  recurso la limita</strong> y la etiqueta de la esquina, <strong>dónde se ejecuta</strong>.
+  Son dos preguntas distintas, y la segunda contiene la respuesta incómoda: la GPU —lo único
+  que se arrienda por hora— <strong>calcula en tres de las doce etapas y se paga en las
+  doce</strong>.</p>
 
   <div class="legend" id="legend"></div>
   <div class="loops" id="loops"></div>
+  <div class="subs" id="subs"></div>
   <div class="scroll-x">
     <div class="flow" id="flow">
       <svg id="wires" viewBox="0 0 1120 500" aria-hidden="true"></svg>
@@ -710,6 +729,22 @@ const POS=[
 ];
 const NH=58;
 const DMD={x:912,y:129,r:34};      // rombo de decisión
+/* Sustrato de ejecución por etapa. Es una pregunta DISTINTA de «qué la limita»:
+   dice en qué pieza de hardware ocurre, y separa la GPU calculando (SMs activos)
+   de la GPU solo ocupada (VRAM comprometida, SMs ociosos). Ahí está el argumento
+   de utilización que sostiene todo el modelo de costos. */
+const SUBS={
+  gpu :{t:"GPU",  c:"--t3",     fill:1, l:"GPU calculando — los SMs trabajan"},
+  vram:{t:"VRAM", c:"--indigo", fill:0, l:"GPU solo ocupada — VRAM comprometida, SMs ociosos"},
+  /* --muted y no --faint: a 8px, --faint daba 2,99 de contraste sobre el panel */
+  cpu :{t:"CPU",  c:"--muted",  fill:0, l:"CPU del host — no toca la GPU"},
+  /* --accent y no --t1: el verde daba 3,48 sobre fondo claro (4,85 / 7,94 con accent) */
+  net :{t:"RED",  c:"--accent", fill:0, l:"Fabric entre GPUs — NVLink o InfiniBand"},
+  ext :{t:"EXT",  c:"--t4",     fill:0, l:"Fuera del servidor — la GPU espera"}
+};
+/* índice paralelo a STAGES */
+const SUB_OF=["cpu","cpu","cpu","cpu","vram","gpu","net","gpu","gpu","ext","cpu","vram"];
+
 const LOOPS=[
   ["L1","--t2","Bucle de generación","decode ⇄ batch continuo · un giro por token (~252)"],
   ["L2","--t4","Bucle de herramientas","el resultado vuelve como entrada · ~10,8 llamadas por solicitud"],
@@ -723,14 +758,24 @@ const LOOPS=[
     `<span class="lp"><b style="background:var(${c})">${k}</b>
       <span>${esc(n)}</span> ${esc(d)}</span>`).join("");
 
+  // leyenda de sustrato + recuento (responde: ¿dónde está la GPU?)
+  const nGpu=SUB_OF.filter(k=>k==="gpu").length;
+  const nMem=SUB_OF.filter(k=>k==="gpu"||k==="vram").length;
+  $("#subs").innerHTML=Object.values(SUBS).map(s=>
+    `<span class="sd" style="color:var(${s.c})"><i class="${s.fill?"fill":""}">${s.t}</i>
+      <span style="color:var(--muted)">${esc(s.l)}</span></span>`).join("")
+   +`<span class="tally">la GPU calcula en ${nGpu} de ${SUB_OF.length} etapas ·
+      su memoria queda comprometida en ${nMem} · se paga en las ${SUB_OF.length}</span>`;
+
   // nodos
   $("#flow").insertAdjacentHTML("beforeend", STAGES.map((s,i)=>{
-    const [x,y,w]=POS[i];
+    const [x,y,w]=POS[i], sb=SUBS[SUB_OF[i]];
     return `<button class="pstage" aria-pressed="${i===0}" data-i="${i}"
-      style="--st:var(${BOUND[s.b].c});left:${x}px;top:${y}px;width:${w}px;height:${NH}px">
+      style="--st:var(${BOUND[s.b].c});--sc:var(${sb.c});left:${x}px;top:${y}px;width:${w}px;height:${NH}px">
       <span class="pn">${String(i+1).padStart(2,"0")}</span>
       <span class="pl">${esc(s.n)}</span>
-      <span class="pm">${esc(s.m)}</span></button>`;}).join("")
+      <span class="pm">${esc(s.m)}</span>
+      <span class="sb ${sb.fill?"fill":""}">${sb.t}</span></button>`;}).join("")
    +`<span class="band" style="left:16px;top:0;transform:translateY(-14px)">Admisión</span>
      <span class="band" style="left:270px;top:100px;transform:translateY(-14px)">Motor de inferencia</span>
      <span class="band" style="left:600px;top:372px;transform:translateY(-14px)">Salida y espera</span>`);
@@ -786,7 +831,9 @@ const LOOPS=[
     $$(".pstage").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.i===i)));
     const s=STAGES[i];
     $("#detail").innerHTML=
-     `<div><h3>${esc(s.n)}</h3><div class="role">${esc(s.role)} · límite: ${esc(BOUND[s.b].l)}</div>
+     `<div><h3>${esc(s.n)}</h3><div class="role">${esc(s.role)} · límite: ${esc(BOUND[s.b].l)}
+        <br><span style="color:var(${SUBS[SUB_OF[i]].c})">Se ejecuta en:
+        ${esc(SUBS[SUB_OF[i]].l)}</span></div>
         <p class="d">${esc(s.d)}</p>
         <div class="hard"><div class="eyebrow">Por qué es difícil</div>
           <ul>${s.h.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div>
