@@ -46,9 +46,15 @@ Al terminar la clase, un estudiante puede:
 class_5_1_opensource/
 ├── README.md                              ← este archivo
 ├── deck/
-│   └── gradient_descent.html               Demo interactivo 3D (Three.js) de descenso de
-│                                           gradiente — ábrelo en el navegador (requiere
-│                                           internet: carga three.js desde unpkg)
+│   ├── gradient_descent.html               Demo interactivo 3D (Three.js) de descenso de
+│   │                                       gradiente — ábrelo en el navegador (requiere
+│   │                                       internet: carga three.js desde unpkg)
+│   ├── serving_llm_a_escala.html           Instrumento interactivo: la máquina real de
+│   │                                       servir un LLM (colas, KV cache, paralelismo,
+│   │                                       simulador de carga). Autocontenido, offline
+│   └── Open-Weights-and-American-AI-       Carta coalición liderada por NVIDIA
+│       Leadership.pdf                      (24-07-2026, 77 firmantes) — lectura para
+│                                           la discusión open vs closed
 ├── data/                                  Insumos locales (vacío por convención)
 ├── outputs/                               Artefactos generados (git-ignorado salvo .gitkeep)
 ├── leccion1_ollama_local/                 LECCIÓN 1 · LLMs locales con Ollama
@@ -116,6 +122,19 @@ separado sin resolver dependencias de las demás.
 Las lecciones 2 y 3 también corren en **Google Colab** (la primera celda instala lo
 necesario); la lección 1 es local por diseño (el modelo vive en tu máquina). Cada lección
 documenta el registro del kernel de Jupyter (`ipykernel`) para su `.venv`.
+
+## Recursos del deck
+
+Además de las diapositivas, la carpeta `deck/` trae tres piezas de apoyo:
+
+| Recurso | Para qué | Cuándo usarlo |
+|---|---|---|
+| [`gradient_descent.html`](deck/gradient_descent.html) | Descenso de gradiente en 3D, con superficies y tasa de aprendizaje ajustables. | Al introducir el fine-tuning (lección 2): qué significa «entrenar». |
+| [`serving_llm_a_escala.html`](deck/serving_llm_a_escala.html) | Desarma la frase «lo corremos nosotros»: ciclo de vida de una solicitud, simulador de carga (VRAM ↔ concurrencia ↔ latencia), arranque en frío, paralelismo e interconexión, y modos de falla. Cifras de producción medidas (DeepSeek, TraceLab, Mooncake). | Junto al bloque de economía: el break-even supone que un nodo «sirve», y esta página muestra lo que esconde esa palabra. |
+| [`Open-Weights-and-American-AI-Leadership.pdf`](deck/Open-Weights-and-American-AI-Leadership.pdf) | La carta del 24-07-2026 impulsada por Jensen Huang, con 77 firmantes — entre ellos Ollama, Hugging Face, LangChain, Unsloth y Nebius, es decir casi todas las herramientas de esta clase. Sin firmar: Anthropic, Amazon, Apple. | Cierre de la discusión open vs closed source. |
+
+Las dos páginas HTML son autocontenidas y se abren con doble clic;
+`serving_llm_a_escala.html` funciona **sin conexión** (tipografías del sistema, sin CDN).
 
 ## Secrets
 

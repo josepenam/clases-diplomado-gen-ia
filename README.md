@@ -9,7 +9,7 @@ Cada clase es autocontenida: su propio `README`, su entorno y sus lecciones paso
 |---|---|---|
 | **3.5 — Deployment** | Llevar un prototipo de GenAI a producción como API | [carpeta](class_3_5_deployment/README.md) · [diapositivas](class_3_5_deployment/deck/deck_3_5_deployment.pptx) |
 | **3.6 — Producción** | Evaluar sistemas de LLMs y versionar prompts y skills | [carpeta](class_3_6_production/README.md) · [diapositivas](class_3_6_production/deck/deck_3_6_production.pptx) |
-| **5.1 — Modelos open source** | Correr LLMs abiertos localmente (Ollama), afinarlos (fine-tuning) y servirlos rápido (Groq) | [carpeta](class_5_1_opensource/README.md) · [demo gradiente](class_5_1_opensource/deck/gradient_descent.html) |
+| **5.1 — Modelos open source** | Correr LLMs abiertos localmente (Ollama), afinarlos (fine-tuning) y servirlos rápido (Groq) | [carpeta](class_5_1_opensource/README.md) · [demos interactivos](class_5_1_opensource/deck/serving_llm_a_escala.html) |
 
 *(Se irán agregando más clases del diplomado.)*
 
@@ -58,7 +58,10 @@ autocontenida y ejecutable por separado (entorno `uv` propio).
 2. **[Lección 2 · Fine-tuning de un LLM](class_5_1_opensource/leccion2_finetuning_llm/)** — DistilGPT2 + subset de WikiText-2 con `Trainer` (transformers v5): tokenización → collator → entrenamiento (minutos en T4/MPS) → comparación con el modelo original.
 3. **[Lección 3 · Inferencia con Groq](class_5_1_opensource/leccion3_inferencia_groq/)** — los `gpt-oss` de OpenAI (open-weights) servidos por hardware LPU: la misma tarea de la lección 1 a cientos de tokens por segundo, midiendo t/s reales.
 
-**Recurso visual:** [`gradient_descent.html`](class_5_1_opensource/deck/gradient_descent.html) — demo interactivo 3D de descenso de gradiente (se abre en el navegador).
+**Recursos visuales** (en `class_5_1_opensource/deck/`, se abren con doble clic):
+[`gradient_descent.html`](class_5_1_opensource/deck/gradient_descent.html) — descenso de gradiente en 3D ·
+[`serving_llm_a_escala.html`](class_5_1_opensource/deck/serving_llm_a_escala.html) — instrumento interactivo sobre lo que realmente implica servir un LLM (colas, KV cache, paralelismo y un simulador de carga), con cifras medidas en producción ·
+[`Open-Weights-and-American-AI-Leadership.pdf`](class_5_1_opensource/deck/Open-Weights-and-American-AI-Leadership.pdf) — la carta de la coalición open-weights (24-07-2026, 77 firmantes).
 
 Más detalle (objetivos, prerrequisitos, entornos): [`class_5_1_opensource/README.md`](class_5_1_opensource/README.md).
 
