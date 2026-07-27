@@ -1,0 +1,15 @@
+[project]
+name = "leccion3-inferencia-groq"
+version = "0.1.0"
+description = "Inferencia de modelos abiertos (gpt-oss) servidos por Groq, con LangChain."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "langchain-groq==1.1.3",
+    "langchain-core==1.4.9",
+    "langsmith==0.9.5",
+    "python-dotenv==1.2.2",
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+package = false

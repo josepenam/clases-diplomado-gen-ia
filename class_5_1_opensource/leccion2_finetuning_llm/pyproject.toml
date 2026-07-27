@@ -1,0 +1,15 @@
+[project]
+name = "leccion2-finetuning-llm"
+version = "0.1.0"
+description = "Fine-tuning completo de DistilGPT2 sobre WikiText-2 con Hugging Face Trainer."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "transformers==5.13.1",
+    "datasets==4.8.5",
+    "accelerate==1.14.0",
+    "torch==2.12.1",
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+package = false
