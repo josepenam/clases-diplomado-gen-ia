@@ -9,6 +9,7 @@ Cada clase es autocontenida: su propio `README`, su entorno y sus lecciones paso
 |---|---|---|
 | **3.5 — Deployment** | Llevar un prototipo de GenAI a producción como API | [carpeta](class_3_5_deployment/README.md) · [diapositivas](class_3_5_deployment/deck/deck_3_5_deployment.pptx) |
 | **3.6 — Producción** | Evaluar sistemas de LLMs y versionar prompts y skills | [carpeta](class_3_6_production/README.md) · [diapositivas](class_3_6_production/deck/deck_3_6_production.pptx) |
+| **5.1 — Modelos open source** | Correr LLMs abiertos localmente (Ollama), afinarlos (fine-tuning) y servirlos rápido (Groq) | [carpeta](class_5_1_opensource/README.md) · [demo gradiente](class_5_1_opensource/deck/gradient_descent.html) |
 
 *(Se irán agregando más clases del diplomado.)*
 
@@ -47,10 +48,26 @@ Más detalle (objetivos, prerrequisitos, entornos): [`class_3_6_production/READM
 
 ---
 
+## Clase 5.1 — Modelos open source
+
+El mundo de los **LLMs open source** de punta a punta: correrlos **localmente**, **afinarlos**
+a un corpus y consumirlos **servidos en la nube a alta velocidad**. Tres lecciones, cada una
+autocontenida y ejecutable por separado (entorno `uv` propio).
+
+1. **[Lección 1 · LLMs locales con Ollama](class_5_1_opensource/leccion1_ollama_local/)** — qué es Ollama, instalarlo, `ollama pull llama3.2` y consumirlo desde LangChain (`ChatOllama`): invocación, streaming y velocidad local. Sin API keys.
+2. **[Lección 2 · Fine-tuning de un LLM](class_5_1_opensource/leccion2_finetuning_llm/)** — DistilGPT2 + subset de WikiText-2 con `Trainer` (transformers v5): tokenización → collator → entrenamiento (minutos en T4/MPS) → comparación con el modelo original.
+3. **[Lección 3 · Inferencia con Groq](class_5_1_opensource/leccion3_inferencia_groq/)** — los `gpt-oss` de OpenAI (open-weights) servidos por hardware LPU: la misma tarea de la lección 1 a cientos de tokens por segundo, midiendo t/s reales.
+
+**Recurso visual:** [`gradient_descent.html`](class_5_1_opensource/deck/gradient_descent.html) — demo interactivo 3D de descenso de gradiente (se abre en el navegador).
+
+Más detalle (objetivos, prerrequisitos, entornos): [`class_5_1_opensource/README.md`](class_5_1_opensource/README.md).
+
+---
+
 ## Cómo usar este repo
 
 - **Secretos.** Cada proyecto trae un `.env.example`: cópialo a `.env` y completa tus llaves
-  (OpenAI, Qdrant, Anthropic según la lección). Los `.env` reales **nunca** se versionan — están en `.gitignore`.
+  (OpenAI, Qdrant, Anthropic, Groq según la lección). Los `.env` reales **nunca** se versionan — están en `.gitignore`.
 - **Colab-first.** Los notebooks corren directo en Google Colab (la primera celda instala lo necesario).
   Para correrlos localmente, cada lección documenta su entorno (`uv` / `poetry`).
 - **Requisitos generales:** Docker, una cuenta de fly.io con `flyctl`, Python > 3.11, y las API keys de cada lección.
