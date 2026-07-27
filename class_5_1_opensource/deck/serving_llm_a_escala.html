@@ -299,7 +299,6 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
     </div>
     <div class="meta">
       Instrumento interactivo<br>
-      Frío = nominal · Cálido = saturación<br>
       <span class="num">↹</span> teclas 1–5 para cambiar de vista
     </div>
   </div>
@@ -310,8 +309,8 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
     <button class="tab" role="tab" aria-selected="true"  data-v="mito"><i>01</i>El mito</button>
     <button class="tab" role="tab" aria-selected="false" data-v="ciclo"><i>02</i>Ciclo de una solicitud</button>
     <button class="tab" role="tab" aria-selected="false" data-v="sim"><i>03</i>Simulador de carga</button>
-    <button class="tab" role="tab" aria-selected="false" data-v="fierro"><i>04</i>El fierro</button>
-    <button class="tab" role="tab" aria-selected="false" data-v="rompe"><i>05</i>Lo que se rompe</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="fierro"><i>04</i>Consideraciones al TTFT</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="rompe"><i>05</i>Modos de falla</button>
   </div>
 </nav>
 
@@ -472,10 +471,12 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
 
 <!-- ══════════════════ 04 ══════════════════ -->
 <section class="view" id="v-fierro" role="tabpanel">
-  <h2 class="vt">El fierro: de un archivo en disco a 144 GPUs coordinadas</h2>
-  <p class="lede">Dos realidades físicas que ninguna tarifa por token menciona:
-  <strong>arrancar cuesta minutos</strong> (y por eso el autoescalado de LLMs es un problema
-  distinto al de un microservicio) y <strong>la red interna tiene un acantilado</strong> en el
+  <h2 class="vt">Consideraciones al TTFT: arranque, reparto e interconexión</h2>
+  <p class="lede">El tiempo hasta el primer token no lo decide solo el modelo: lo deciden tres
+  realidades físicas que ninguna tarifa por token menciona. <strong>Arrancar una réplica cuesta
+  minutos</strong> (y por eso el autoescalado de LLMs es un problema distinto al de un
+  microservicio), <strong>cómo se reparte el modelo</strong> define cuánta comunicación entra en
+  la ruta crítica de cada token, y <strong>la red interna tiene un acantilado</strong> en el
   borde del nodo.</p>
 
   <h3 class="st">01 · Arranque en frío — la ruta de los pesos</h3>
@@ -519,7 +520,7 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
 
 <!-- ══════════════════ 05 ══════════════════ -->
 <section class="view" id="v-rompe" role="tabpanel">
-  <h2 class="vt">Lo que se rompe</h2>
+  <h2 class="vt">Modos de falla</h2>
   <p class="lede">Un prototipo falla y se reinicia. Un servicio falla y alguien pierde algo.
   Estos son los modos de falla que aparecen <strong>solo</strong> cuando hay concurrencia,
   redundancia y agentes de verdad.</p>
@@ -1033,7 +1034,7 @@ function draw(r){
 </script>
 <script>
 "use strict";
-/* ═════════ 04 · el fierro ═════════ */
+/* ═════════ 04 · consideraciones al TTFT ═════════ */
 (function(){
   const CHAIN=[
    ["Object storage → nodo","pull inicial de la imagen y los pesos por red","~2 Gb/s efectivos",560,"--t4"],
