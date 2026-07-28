@@ -164,7 +164,6 @@ ol.steps li::before{content:counter(s,decimal-leading-zero);
 .subs .sd i{font-family:var(--f-data); font-size:8px; font-style:normal;
   letter-spacing:.05em; padding:.06rem .26rem; border-radius:2px;
   border:1px solid currentColor}
-.subs .sd i.fill{background:currentColor}
 .subs .tally{font-family:var(--f-data); font-size:11px; color:var(--t3);
   border-left:1px solid var(--line); padding-left:.9rem}
 /* rótulos y decoración del diagrama */
@@ -185,17 +184,12 @@ ol.steps li::before{content:counter(s,decimal-leading-zero);
   margin-top:.15rem; line-height:1.25}
 .wl{font-family:var(--f-data); font-size:9.5px; fill:var(--muted)}
 .wl.k{font:600 10px var(--f-disp); letter-spacing:.1em; text-transform:uppercase}
-.dmd{font:600 9px var(--f-disp); letter-spacing:.06em; fill:var(--ink);
-  text-transform:uppercase}
 .loops{display:flex; flex-wrap:wrap; gap:.5rem .9rem; margin:.2rem 0 0}
 .loops .lp{display:flex; gap:.45rem; align-items:baseline; font-size:11.5px;
   color:var(--muted)}
 .loops .lp b{font-family:var(--f-data); font-size:10px; padding:.06rem .32rem;
   border-radius:2px; color:var(--ground)}
 .loops .lp span{color:var(--ink-dim)}
-.legend{display:flex; flex-wrap:wrap; gap:.4rem 1.1rem; margin-bottom:.4rem}
-.lg{display:flex; align-items:center; gap:.4rem; font-size:11px; color:var(--muted)}
-.sw{width:9px; height:9px; border-radius:1px; flex:0 0 auto}
 
 .detail{margin-top:1rem; display:grid; gap:1rem; grid-template-columns:1.35fr 1fr;
   align-items:start}
@@ -203,18 +197,12 @@ ol.steps li::before{content:counter(s,decimal-leading-zero);
 .detail h3{font:600 clamp(1.05rem,2.2vw,1.3rem)/1.15 var(--f-disp);
   text-transform:uppercase; letter-spacing:.02em}
 .detail .role{font-family:var(--f-data); font-size:11px; color:var(--accent); margin-top:.3rem}
-.detail p.d{margin-top:.7rem; font-size:.93rem; color:var(--ink-dim); max-width:64ch}
-.hard{margin-top:.9rem; padding-top:.85rem; border-top:1px solid var(--line)}
-.hard .eyebrow{color:var(--t3)}
-.hard ul{margin:.5rem 0 0; padding-left:1.05rem; font-size:.885rem; color:var(--ink-dim)}
-.hard li{margin:.3rem 0}
-dl.facts{margin:0; display:grid; gap:.55rem}
-dl.facts>div{display:flex; justify-content:space-between; gap:.8rem; align-items:baseline;
-  padding-bottom:.5rem; border-bottom:1px solid var(--line)}
-dl.facts>div:last-child{border-bottom:0; padding-bottom:0}
-dl.facts dt{font-size:.8rem; color:var(--muted); max-width:22ch}
-dl.facts dd{margin:0; font-family:var(--f-data); font-size:.86rem; text-align:right;
-  font-variant-numeric:tabular-nums; white-space:nowrap}
+.detail p.d{margin-top:.8rem; font-size:1rem; line-height:1.6; color:var(--ink-dim);
+  max-width:58ch}
+.costs{display:grid; gap:.7rem}
+.cost{border-left:3px solid var(--indigo); padding:.1rem 0 .1rem .75rem}
+.cost.lat{border-left-color:var(--t3)}
+.cost p{margin-top:.3rem; font-size:.92rem; color:var(--ink-dim); max-width:46ch}
 
 /* ── simulador ── */
 .sim{display:grid; gap:1rem; grid-template-columns:300px 1fr; margin-top:1.2rem}
@@ -309,9 +297,9 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
     <div>
       <div class="eyebrow">Módulo 5 · Clase 1 — Modelos open source</div>
       <h1>Servir un LLM <em>a escala</em></h1>
-      <p class="sub">Todo lo que esconde la frase «lo corremos nosotros». Un recorrido por la
-      máquina real: tokenización, colas, batching continuo, KV cache, paralelismo,
-      interconexión y las cosas que se rompen. Con cifras medidas en producción.</p>
+      <p class="sub">Todo lo que esconde la frase «lo corremos nosotros»: qué pasa de verdad
+      entre que alguien escribe algo y recibe una respuesta, qué máquina hace falta para eso, y
+      por qué la espera es el problema difícil.</p>
     </div>
     <div class="meta">
       Instrumento interactivo<br>
@@ -334,74 +322,68 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
 
 <!-- ══════════════════ 01 ══════════════════ -->
 <section class="view on" id="v-mito" role="tabpanel">
-  <h2 class="vt">Dos modelos mentales del mismo verbo</h2>
-  <p class="lede">En la lección 1 corrimos <span class="num">llama3.2</span> en un laptop con
-  tres palabras. Funciona, y esa es exactamente la trampa: <strong>la demo y el servicio
-  comparten el verbo «correr» y no comparten casi nada más</strong>. La columna de la izquierda
-  es lo que el estudiante experimentó. La de la derecha es lo que una organización firma cuando
-  dice que va a autohospedar.</p>
+  <h2 class="vt">Dos cosas distintas con el mismo nombre</h2>
+  <p class="lede">En la lección 1 corrimos un modelo en un laptop con tres palabras. Funciona, y
+  ahí está la trampa: <strong>la demo y el servicio se llaman igual y no se parecen en nada</strong>.
+  A la izquierda, lo que hiciste en clase. A la derecha, lo que una organización se compromete a
+  operar cuando dice que va a hospedarlo.</p>
 
   <div class="myth">
     <div class="myth-col myth-naive card">
-      <h4>Lo que viste en clase · 1 GPU, 1 usuario</h4>
+      <h4>Correrlo · una GPU, una persona</h4>
       <ol class="steps">
-        <li>Descargar los pesos <span class="tag">2 GB</span></li>
-        <li>Cargarlos en la GPU <span class="tag">~4 s</span></li>
-        <li>Escribir un prompt y esperar <span class="tag">~26 t/s</span></li>
+        <li>Descargar el modelo</li>
+        <li>Cargarlo en la GPU</li>
+        <li>Escribir y esperar la respuesta</li>
       </ol>
-      <p class="note">Un solo usuario, sin concurrencia, sin SLA, sin caída aceptable,
-      sin nadie más esperando. Latencia = lo que tarde.</p>
+      <p class="note">Una sola persona, nadie más en la fila, ninguna hora de entrega
+      comprometida. Si tarda, tarda.</p>
     </div>
     <div class="myth-col myth-real card">
-      <h4>Lo que implica servirlo · N nodos, miles de usuarios</h4>
+      <h4>Servirlo · varios servidores, miles de personas</h4>
       <ol class="steps">
-        <li>Tokenizar y validar la entrada <span class="tag">CPU</span></li>
-        <li>Enrutar según prefijo y capacidad <span class="tag">gateway</span></li>
-        <li>Admitir o rechazar <span class="tag">control de carga</span></li>
-        <li>Encolar con prioridad y deadline <span class="tag">scheduler</span></li>
-        <li>Reservar bloques de KV cache <span class="tag">VRAM</span></li>
-        <li>Prefill: cómputo, se satura con 1 request <span class="tag">FLOPs</span></li>
-        <li>Transferir el KV al pool de decode <span class="tag">RDMA</span></li>
-        <li>Decode: ancho de banda de memoria <span class="tag">HBM</span></li>
-        <li>Batching continuo, entra y sale gente <span class="tag">por paso</span></li>
-        <li>Gramática restringida para tool calls <span class="tag">JSON</span></li>
-        <li>Ejecutar la herramienta y volver <span class="tag">bucle</span></li>
-        <li>Sostener el KV durante el «think time» <span class="tag">TTL</span></li>
-        <li>Detokenizar en streaming sin cortar UTF-8 <span class="tag">SSE</span></li>
-        <li>Medir TTFT, ITL, p95 y goodput <span class="tag">SLO</span></li>
-        <li>Sobrevivir a una GPU muerta <span class="tag">N+1</span></li>
+        <li>Convertir el texto en números</li>
+        <li>Elegir qué servidor atiende</li>
+        <li>Decidir a quién se le dice que no</li>
+        <li>Poner la solicitud en fila</li>
+        <li>Apartar memoria para la conversación</li>
+        <li>Leer todo lo que se mandó</li>
+        <li>Mover esa memoria entre servidores</li>
+        <li>Escribir la respuesta palabra por palabra</li>
+        <li>Atender a decenas de personas a la vez</li>
+        <li>Ejecutar herramientas y volver a empezar</li>
+        <li>Guardar la conversación mientras la persona piensa</li>
+        <li>Entregar el texto a medida que aparece</li>
+        <li>Medir cuánto esperó cada uno</li>
+        <li>Seguir funcionando cuando se muere una GPU</li>
       </ol>
     </div>
   </div>
 
   <div class="kicker">
-    <b>El punto de la clase.</b> La lámina de break-even asume que un nodo «sirve». Este
-    documento desarma esa palabra. Cada subsistema de la derecha tiene su propio modo de falla,
-    su propia métrica y su propia persona a cargo — y el costo de esa persona no aparece en
-    ninguna tarifa por token.
+    <b>Por qué importa.</b> El cálculo de cuándo conviene hospedar un modelo propio supone que
+    el servidor «sirve». Esa palabra esconde la columna de la derecha: cada línea tiene su forma
+    de fallar y alguien a cargo. Ese alguien no aparece en ninguna tarifa por token.
   </div>
 </section>
 
 <!-- ══════════════════ 02 ══════════════════ -->
 <section class="view" id="v-ciclo" role="tabpanel">
   <h2 class="vt">Ciclo de vida de una solicitud</h2>
-  <p class="lede">Haz clic en cualquier etapa. El color de la izquierda indica <strong>qué
-  recurso la limita</strong> y la etiqueta de la esquina, <strong>dónde se ejecuta</strong>.
-  Son dos preguntas distintas, y la segunda contiene la respuesta incómoda: la GPU —lo único
-  que se arrienda por hora— <strong>calcula en tres de las doce etapas y se paga en las
-  doce</strong>.</p>
+  <p class="lede">Haz clic en cualquier etapa para ver qué hace, qué exige de la máquina y qué
+  le suma a la espera. La GPU —lo único que se arrienda por hora— <strong>solo calcula en tres
+  de estas doce etapas, y se paga en las doce</strong>.</p>
 
-  <div class="legend" id="legend"></div>
-  <div class="loops" id="loops"></div>
   <div class="subs" id="subs"></div>
+  <div class="loops" id="loops"></div>
   <div class="scroll-x">
     <div class="flow" id="flow">
       <svg id="wires" viewBox="0 0 1120 500" aria-hidden="true"></svg>
       <div class="mult">
-        <span class="eyebrow">El multiplicador de los bucles</span>
-        <b>1 turno humano</b>
-        <s>≈ 8,7 pasos de agente (L2)<br>× ~252 tokens cada uno (L1)</s>
-        <u>≈ 2.200 pasadas completas de decode por cada cosa que alguien escribe</u>
+        <span class="eyebrow">Por qué importan los bucles</span>
+        <b>Un mensaje no es<br>una pasada</b>
+        <s>Los tres bucles se<br>multiplican entre sí</s>
+        <u>Cada cosa que alguien escribe cuesta miles de pasadas completas por el modelo</u>
       </div>
     </div>
   </div>
@@ -466,24 +448,21 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
     </div>
   </div>
 
-  <h3 class="st">Las fórmulas, sin misterio</h3>
+  <h3 class="st">Las dos ideas que mueven todo</h3>
   <div class="grid g2">
     <div class="card">
-      <div class="eyebrow">KV cache por token</div>
-      <p class="note" style="margin-top:.5rem">
-      <code>GQA/MHA: 2 × capas × cabezas_kv × dim × bytes</code><br>
-      <code>MLA: capas × (d_c + d_rope) × bytes</code><br><br>
-      Llama-3 70B → <b class="num">320 KiB/token</b>. DeepSeek-V3 con MLA →
-      <b class="num">68,6 KiB/token</b>: <b>4,7× menos</b> pese a ser un modelo 10× mayor.
-      La arquitectura de atención decide cuánta gente cabe en la máquina.</p>
+      <div class="eyebrow">La memoria manda</div>
+      <p class="note" style="margin-top:.5rem">Cada conversación viva ocupa memoria de GPU, y
+      esa memoria crece con lo que se lleva conversado. Es lo que fija cuánta gente cabe al
+      mismo tiempo. Algunos modelos guardan ese apunte de forma mucho más compacta que otros
+      —a veces órdenes de magnitud— y eso pesa más que su tamaño total.</p>
     </div>
     <div class="card">
-      <div class="eyebrow">Paso de decode (límite por memoria)</div>
-      <p class="note" style="margin-top:.5rem">
-      <code>t_paso = (bytes_pesos + bytes_KV_activo) / BW_HBM</code><br>
-      <code>tokens/s = batch / t_paso</code><br><br>
-      Con contexto largo el término de KV <b>supera al de los pesos</b>: la atención, no el
-      modelo, pasa a ser el cuello de botella. Ese cruce es visible en la barra de VRAM.</p>
+      <div class="eyebrow">Escribir es releer</div>
+      <p class="note" style="margin-top:.5rem">Para cada palabra, la GPU repasa el modelo
+      entero y las conversaciones que tiene abiertas. Con conversaciones largas, releer las
+      conversaciones cuesta más que releer el modelo: ahí el cuello de botella deja de ser el
+      modelo y pasa a ser la memoria. La barra de arriba muestra ese cruce.</p>
     </div>
   </div>
 </section>
@@ -491,49 +470,33 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
 <!-- ══════════════════ 04 ══════════════════ -->
 <section class="view" id="v-fierro" role="tabpanel">
   <h2 class="vt">Consideraciones al TTFT: arranque, reparto e interconexión</h2>
-  <p class="lede">El tiempo hasta el primer token no lo decide solo el modelo: lo deciden tres
-  realidades físicas que ninguna tarifa por token menciona. <strong>Arrancar una réplica cuesta
-  minutos</strong> (y por eso el autoescalado de LLMs es un problema distinto al de un
-  microservicio), <strong>cómo se reparte el modelo</strong> define cuánta comunicación entra en
-  la ruta crítica de cada token, y <strong>la red interna tiene un acantilado</strong> en el
-  borde del nodo.</p>
+  <p class="lede">El TTFT es lo que tarda en aparecer <strong>la primera palabra</strong> de la
+  respuesta. No lo decide solo el modelo: lo deciden tres cosas físicas que ninguna tarifa por
+  token menciona — <strong>cuánto tarda en encenderse un servidor</strong>, <strong>cómo está
+  repartido el modelo</strong> entre GPUs, y <strong>qué tan rápido se hablan esas GPUs</strong>
+  entre sí.</p>
 
-  <h3 class="st">01 · Arranque en frío — la ruta de los pesos</h3>
+  <h3 class="st">01 · Prender un servidor no es instantáneo</h3>
   <div class="chain" id="chain"></div>
-  <p class="note">Estimación de orden de magnitud para <b>140 GB de pesos</b> (70B en bf16),
-  primer arranque sin caché local. Un microservicio arranca en segundos; una réplica de LLM
-  arranca en minutos, y durante esos minutos <b>no atiende y sí se paga</b>. De ahí los pods
-  pre-calentados, las imágenes gigantes y el hecho de que «escalar con la demanda» sea, en la
-  práctica, «tener capacidad esperando».</p>
+  <p class="note">Un servicio web común arranca en segundos. Un servidor de modelo arranca en
+  minutos, porque antes hay que traer el modelo por la red, leerlo del disco y subirlo a la
+  GPU. Durante esos minutos <b>no atiende a nadie y ya se está pagando</b>. Por eso «que
+  crezca solo cuando haya demanda» termina siendo, en la práctica, <b>tener máquinas
+  encendidas esperando</b>.</p>
 
-  <h3 class="st">02 · Cómo se reparte un modelo</h3>
+  <h3 class="st">02 · Un modelo grande no cabe en una GPU</h3>
   <div class="grid g2" id="par"></div>
 
-  <h3 class="st">03 · El acantilado de la interconexión</h3>
-  <div class="card scroll-x">
-    <table>
-      <caption>Tiempo de transferir el KV cache de una solicitud (Llama-3 70B, 320 KiB/token)
-      desde el pool de prefill al de decode. El salto NVLink → InfiniBand es de un orden de
-      magnitud: por eso el paralelismo de tensor quiere quedarse <em>dentro</em> del nodo.</caption>
-      <thead><tr><th>Contexto</th><th>Blob KV</th><th>NVLink 4 (450 GB/s, 1 vía)</th>
-        <th>8×400G RoCE (190 GB/s medidos)</th><th>1×400G IB (≈43 GB/s reales)</th></tr></thead>
-      <tbody id="ictab"></tbody>
-    </table>
-  </div>
-  <p class="note"><b>Trampa de marketing:</b> los «900 GB/s» de NVLink de un H100 son el
-  agregado <em>bidireccional</em>. Un envío en una sola dirección dispone de ~450 GB/s. Y
-  «400 Gb/s» de InfiniBand son 50 GB/s teóricos, de los que se miden 43–58 GB/s reales.</p>
-
-  <h3 class="st">04 · Producción real, con nombre y apellido</h3>
+  <h3 class="st">03 · Dentro de la máquina es rápido; entre máquinas, no</h3>
   <div class="card">
-    <div class="eyebrow">DeepSeek V3/R1 — divulgación de 24 h, 27–28 feb 2025</div>
-    <div class="grid g4" style="margin-top:.8rem" id="ds"></div>
-    <p class="note" style="margin-top:.9rem">Es el único P&amp;L de inferencia a escala
-    publicado con este nivel de detalle. Nótese: <b>EP32 para prefill y EP144 para decode</b> —
-    dos configuraciones de paralelismo distintas para el mismo modelo, algo imposible si ambas
-    fases comparten las mismas GPUs. Verifiqué la consistencia interna de las cifras: las
-    horas-nodo implícitas por prefill y decode suman <b class="num">5.445</b> contra
-    <b class="num">5.442</b> disponibles — cuadran al 0,1%.</p>
+    <div class="eyebrow">Mover la memoria de una conversación</div>
+    <div class="bars" style="margin-top:.8rem" id="icbars"></div>
+    <p class="note" style="margin-top:.9rem">Cuando el modelo se reparte entre varias GPUs,
+    esas GPUs se hablan todo el tiempo. Si están dentro de la misma máquina, se hablan por un
+    cable interno muy rápido. Si están en máquinas distintas, por la red: <b>un orden de
+    magnitud más lento</b>. Esa diferencia decide cómo se puede repartir un modelo — y es la
+    razón por la que un servidor de inferencia se compra de a máquinas completas, no de a
+    tarjetas.</p>
   </div>
 </section>
 
@@ -541,63 +504,39 @@ footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:up
 <section class="view" id="v-rompe" role="tabpanel">
   <h2 class="vt">Modos de falla</h2>
   <p class="lede">Un prototipo falla y se reinicia. Un servicio falla y alguien pierde algo.
-  Estos son los modos de falla que aparecen <strong>solo</strong> cuando hay concurrencia,
-  redundancia y agentes de verdad.</p>
+  Estas cosas <strong>solo aparecen</strong> cuando hay mucha gente a la vez, respaldo que
+  sostener y agentes trabajando de verdad.</p>
 
   <div class="grid g2" id="fails" style="margin-top:1.2rem"></div>
 
-  <h3 class="st">Y encima: los agentes no se parecen a un chat</h3>
-  <p class="lede">Todo lo anterior se dimensiona con un supuesto de tráfico. Las trazas reales
-  de agentes de código rompen ese supuesto en las tres dimensiones a la vez.</p>
-  <div class="card scroll-x" style="margin-top:.9rem">
-    <table>
-      <caption>TraceLab: 4.265 sesiones reales de Claude Code y Codex, 357.161 pasos de LLM,
-      432.510 llamadas a herramientas, 43 desarrolladores, 8 meses. Los percentiles son lo
-      importante: la mediana no dimensiona nada.</caption>
-      <thead><tr><th>Magnitud</th><th>Mediana</th><th>p90</th><th>p99 / media</th>
-        <th>Qué implica para el servicio</th></tr></thead>
-      <tbody id="agtab"></tbody>
-    </table>
-  </div>
+  <h3 class="st">Y los agentes no se parecen a un chat</h3>
+  <div class="grid g2" id="ag"></div>
   <div class="kicker" style="margin-top:1.3rem">
-    <b>La paradoja que hay que enseñar.</b> Los agentes envían ~294 tokens de entrada por cada
-    token de salida, lo que sugiere un sistema dominado por el prefill. Medido en
-    <em>tiempo</em>, el decode se lleva el <b class="num">91–98,6%</b>. La razón es que el
-    95,7% del prefijo llega en caché: los tokens son muchos, el cómputo nuevo es poco. La
-    consecuencia no es un problema de FLOPs, es <b>un problema de memoria</b> — hay que
-    sostener contextos de 126.000 tokens durante pausas humanas cuya mediana es 1,4 minutos y
-    cuyo p90 son 20,6.
+    <b>Lo que hay que llevarse.</b> Un agente manda muchísimo texto de entrada, así que parece
+    un problema de capacidad de cálculo. No lo es: casi toda esa entrada ya estaba guardada de
+    la vuelta anterior, y el tiempo se va en escribir. El cuello de botella real es
+    <b>la memoria</b> — mantener conversaciones enormes vivas mientras alguien piensa.
   </div>
 </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <h4>Fuentes y honestidad metodológica</h4>
+    <h4>De dónde sale esto</h4>
     <div class="srcs">
-      <p><span class="badge b-m">medido</span>DeepSeek, <i>V3/R1 Inference System Overview</i>
-      (open-infra-index, mar 2025) — divulgación de 24 h.</p>
-      <p><span class="badge b-m">medido</span>TraceLab, UW SyFI Lab, arXiv:2606.30560 — trazas
-      reales de agentes de código.</p>
-      <p><span class="badge b-m">medido</span>Mooncake (Moonshot AI), FAST'25, arXiv:2407.00079
-      — trazas y motor de transferencia.</p>
-      <p><span class="badge b-m">medido</span>DistServe, OSDI'24, arXiv:2401.09670 — prefill
-      compute-bound vs decode memory-bound.</p>
-      <p><span class="badge b-m">medido</span>Splitwise, ISCA'24, arXiv:2311.18677 — asimetría
-      cómputo/ancho de banda y potencia.</p>
-      <p><span class="badge b-m">medido</span>DeepEP (DeepSeek) — latencias y ancho de banda
-      all-to-all por grado de EP.</p>
-      <p><span class="badge b-m">medido</span>SGLang, 96×H100 EP a gran escala (lmsys.org,
-      may 2025) — réplica pública dentro del 5,6% del perfil oficial.</p>
-      <p><span class="badge b-e">estimado</span>Los tiempos de arranque en frío y las curvas del
-      simulador son <b>modelos de orden de magnitud</b> calculados en esta página con las
-      fórmulas mostradas, no mediciones. Sirven para razonar, no para dimensionar una compra.</p>
-      <p><span class="badge b-v">ojo</span>«Nx de throughput» sin un SLO asociado no es
-      comparable: la desagregación prefill/decode mejora el <b>goodput</b> (throughput sujeto a
-      SLO), no los tokens/s brutos sobre el mismo fierro. La documentación de vLLM lo dice
-      explícitamente.</p>
-      <p style="color:var(--faint)">Documento autocontenido: sin CDN, sin red. Funciona offline
-      en clase. Tipografías del sistema.</p>
+      <p><span class="badge b-m">medido</span>El comportamiento descrito viene de mediciones
+      publicadas en producción y de trabajos revisados: la divulgación de 24 horas de
+      <b>DeepSeek</b> sobre su propio sistema de inferencia, las trazas reales de agentes de
+      código de <b>TraceLab</b> (UW), y los trabajos <b>Mooncake</b> (Moonshot AI),
+      <b>DistServe</b> y <b>Splitwise</b>.</p>
+      <p><span class="badge b-e">estimado</span>El simulador y los tiempos de arranque son
+      <b>modelos de orden de magnitud</b>, no mediciones: sirven para entender cómo se mueven
+      las cosas entre sí, no para dimensionar una compra.</p>
+      <p><span class="badge b-v">ojo</span>Cuidado con los «tantas veces más rápido» sin decir
+      con qué compromiso de espera: casi siempre miden cuánto trabajo pasa, no cuánta gente
+      quedó atendida en tiempo. Son cosas distintas.</p>
+      <p style="color:var(--faint)">Documento autocontenido: funciona sin conexión, con las
+      tipografías del sistema.</p>
     </div>
   </div>
 </footer>
@@ -641,84 +580,58 @@ addEventListener("keydown",e=>{
 });
 
 /* ═════════ 02 · etapas ═════════ */
-const BOUND={
-  cpu:{l:"CPU / red",c:"--t0"}, mem:{l:"Memoria (VRAM / HBM)",c:"--t2"},
-  flop:{l:"Cómputo (FLOPs)",c:"--t3"}, net:{l:"Interconexión",c:"--t1"},
-  ext:{l:"Mundo exterior",c:"--t4"}
-};
+/* Cada etapa responde tres preguntas y nada más: qué pasa, qué exige de la
+   infraestructura y qué le hace a la espera del usuario. Sin cifras: el detalle
+   numérico vive en el simulador, no en la explicación. */
 const STAGES=[
-{n:"Tokenizar",b:"cpu",m:"~1 ms",role:"Texto → enteros",
- d:"El BPE convierte bytes en identificadores de vocabulario. Parece trivial y es la primera fuente de sorpresas de facturación: el mismo texto en español cuesta más tokens que en inglés, porque el vocabulario se entrenó mayoritariamente sobre inglés. Todo lo que sigue se mide en tokens, no en caracteres.",
- h:["El español consume del orden de 15–30% más tokens que el mismo contenido en inglés: misma factura, menos texto.",
-    "En streaming no se puede detokenizar token a token: un carácter UTF-8 multibyte o un emoji se parten entre tokens y hay que mantener un búfer para no emitir basura.",
-    "Cada modelo tiene su tokenizador: contar tokens para presupuestar exige el tokenizador correcto, no una aproximación."],
- f:[["Coste","~1 ms, en CPU"],["Se paraleliza","sí, trivialmente"],["Riesgo real","facturación y truncado"]]},
-{n:"Enrutar",b:"cpu",m:"gateway",role:"Elegir a qué réplica va",
- d:"Un gateway decide qué réplica atiende. Con caché de prefijo la decisión deja de ser round-robin: si esta conversación ya dejó su KV en la réplica 3, mandarla a la 7 obliga a recomputar decenas de miles de tokens. El balanceo pasa a ser consciente del estado.",
- h:["Round-robin destruye la caché: el balanceador con conciencia de prefijo de SGLang sube los aciertos del 20% al 75%.",
-    "La afinidad de sesión pelea con el balanceo de carga: la réplica «correcta» puede ser la más ocupada.",
-    "El gateway pasa a tener estado, y por tanto a ser un componente crítico más."],
- f:[["Aciertos, round-robin","20%"],["Aciertos, con prefijo","75%"],["Throughput","82.665 → 158.596 t/s"]]},
-{n:"Admitir",b:"cpu",m:"control",role:"Aceptar, encolar o rechazar",
- d:"Bajo sobrecarga hay que rechazar temprano. Rechazar tarde — después de haber hecho el prefill — quema cómputo que nadie paga. Mooncake predice si habrá capacidad de decode antes de gastar el prefill.",
- h:["Rechazo tardío = prefill desperdiciado, el peor de los mundos.",
-    "El rechazo ingenuo genera oscilación en antifase entre los pools de prefill y decode: un problema de teoría de control, no de código.",
-    "Sin control de admisión, la degradación no es gradual: es un colapso."],
- f:[["Modo de falla","oscilación en antifase"],["Mitigación","rechazo predictivo"]]},
-{n:"Encolar",b:"cpu",m:"p95",role:"Esperar turno",
- d:"Aquí vive la latencia que el usuario percibe y que ningún benchmark de tokens/s muestra. Una cola no se degrada linealmente: al 85% de utilización la espera ya es ~5,7× el tiempo de servicio; al 95%, 19×.",
- h:["El tráfico real es a ráfagas: el 5% de los segundos concentra 9,5–18% del tráfico de la hora.",
-    "En trazas de agentes, un minuto pico mueve 50× más tokens de entrada que el minuto más flojo.",
-    "Dimensionar por el promedio garantiza incumplir el p95."],
- f:[["Utilización 85%","espera ≈ 5,7× servicio"],["Utilización 95%","espera ≈ 19× servicio"],["Llegadas medidas","0,019–0,21 req/s"]]},
-{n:"Reservar KV",b:"mem",m:"bloques",role:"Apartar memoria de atención",
- d:"PagedAttention reparte el KV cache en bloques de tamaño fijo, como la memoria virtual de un sistema operativo, para no fragmentar la VRAM. La VRAM libre después de los pesos es el verdadero límite de cuántos usuarios simultáneos caben.",
- h:["Cada secuencia viva reserva memoria proporcional a su contexto: 320 KiB por token en Llama-70B.",
-    "Un contexto de 126.000 tokens ocupa ~38 GiB de KV para un solo usuario.",
-    "Si se agota, hay que desalojar y recomputar: la latencia se dispara justo cuando hay más carga."],
- f:[["Llama-3 70B (GQA)","320 KiB/token"],["DeepSeek-V3 (MLA)","68,6 KiB/token"],["OPT-66B (MHA)","2,25 MiB/token"]]},
-{n:"Prefill",b:"flop",m:"compute-bound",role:"Leer el prompt completo",
- d:"Procesa todo el prompt de una vez. Está limitado por cómputo: una sola secuencia de 512 tokens ya satura una A100, así que agrupar solicitudes no compra nada. Es la fase que define el TTFT.",
- h:["Al estar ya saturado, el batching no ayuda: la única palanca es más FLOPs o menos tokens.",
-    "Un prefill largo insertado en un lote de decode congela a todos los demás usuarios: es la causa de los picos de ITL.",
-    "Por eso se parte en trozos (chunked prefill) o se manda a un pool aparte."],
- f:[["Satura una A100 con","1 secuencia de 512 tokens"],["Escala con","tokens de entrada"],["Métrica","TTFT"]]},
-{n:"Mover KV",b:"net",m:"RDMA",role:"Prefill → decode",
- d:"Si prefill y decode viven en pools separados, el KV cache tiene que viajar. Un contexto de 128k en Llama-70B son ~43 GB: casi un segundo por InfiniBand, 95 ms por NVLink. Se esconde solapándolo capa por capa mientras el prefill sigue calculando.",
- h:["Transferencia solapada por capa: ~5–8 ms de sobrecoste, menos del 7%. Serializada, es inaceptable.",
-    "La arquitectura de atención decide la viabilidad: con MLA el blob es 4,7× menor, y por eso a DeepSeek le sale casi gratis.",
-    "Con prompts cortos los costes fijos dominan y desagregar empeora las cosas."],
- f:[["128k ctx, Llama-70B","≈43 GB"],["Por NVLink (450 GB/s)","95 ms"],["Por 1×400G IB real","≈1 s"]]},
-{n:"Decode",b:"mem",m:"memory-bound",role:"Un token por paso",
- d:"Genera de a un token. Cada paso vuelve a leer todos los pesos y todo el KV activo, así que lo limita el ancho de banda de memoria, no el cómputo. Por eso una GPU nueva ayuda menos de lo que promete: el H100 da 3,43× más cómputo que el A100 pero solo 1,64× más ancho de banda.",
- h:["Con contexto largo, leer el KV cuesta más que leer el modelo: la atención se vuelve el cuello de botella.",
-    "Bajar el límite de potencia a la mitad casi no afecta al decode — señal inequívoca de que no es cómputo.",
-    "Aquí se consume el 91–98,6% del tiempo en cargas agénticas."],
- f:[["Límite","ancho de banda HBM"],["H100 vs A100, cómputo","3,43×"],["H100 vs A100, banda","1,64×"]]},
-{n:"Batch continuo",b:"mem",m:"por paso",role:"Rearmar el lote cada token",
- d:"El lote se recompone en cada paso: quien termina se va, quien espera entra. Es lo que hace rentable a un servidor de inferencia, y también lo que hace que la latencia de un usuario dependa de los demás.",
- h:["La latencia deja de ser una propiedad de la solicitud y pasa a ser una propiedad del sistema.",
-    "Un vecino con un prompt enorme degrada a todos: el problema del vecino ruidoso, dentro de la GPU.",
-    "Reproducir un incidente es casi imposible: el lote exacto no vuelve a ocurrir."],
- f:[["Composición","cambia cada paso"],["Efecto","acoplamiento entre usuarios"]]},
-{n:"Tool calling",b:"ext",m:"bucle",role:"Salir al mundo y volver",
- d:"El modelo emite una llamada a herramienta con esquema válido — normalmente forzado con decodificación restringida — el sistema la ejecuta y el resultado vuelve como entrada. Cada vuelta reprocesa el contexto acumulado. El 88% de las rondas de un agente responden a un resultado de herramienta, no a un humano.",
- h:["La ejecución de herramientas tiene una cola larguísima: mediana 0,3 s, p90 13,6 s. El 4% de las llamadas se lleva el 85% del tiempo.",
-    "Mientras se espera, ¿se sostiene el KV (memoria ocupada sin producir) o se descarta (recomputar al volver)?",
-    "En herramientas, los tokens de tool call son el 70–98% de la salida: casi nada de lo generado lo lee un humano."],
- f:[["Tool time, mediana","0,3 s"],["Tool time, p90","13,6 s"],["Rondas por resultado","88%"]]},
-{n:"Emitir",b:"cpu",m:"SSE",role:"Detokenizar en streaming",
- d:"Se devuelve texto token a token por SSE o websocket, cuidando de no cortar caracteres multibyte, y midiendo TTFT e ITL por solicitud. Aquí se cierra el contrato con el usuario: 20–22 tokens/s es lo que DeepSeek entrega en producción.",
- h:["El ITL debe ser estable, no solo bajo: un tartamudeo se percibe peor que una latencia uniforme mayor.",
-    "Hay que instrumentar por solicitud y por percentil; un promedio esconde exactamente el problema que importa.",
-    "Cortar mal un carácter UTF-8 es un bug visible para el usuario final."],
- f:[["Velocidad en producción","20–22 t/s por usuario"],["Métricas","TTFT, ITL, p95"]]},
-{n:"Sostener contexto",b:"mem",m:"TTL",role:"Esperar al humano",
- d:"Entre turnos, la persona piensa. El pensamiento humano se lleva el 92,3% del reloj de pared de una sesión. Sostener su KV cuesta memoria que no produce tokens; descartarlo cuesta recomputar todo el contexto al volver. Cuando la persona responde, el ciclo entero vuelve a empezar (L3).",
- h:["Pausa humana: mediana 1,4 min, p90 20,6 min, media 46,7 min — distribución con cola brutal.",
-    "Un TTL de caché de 5 minutos falla en más del 10% de los turnos; uno de 1 hora cubre la mayoría pero inmoviliza memoria.",
-    "Es una decisión de negocio disfrazada de parámetro de configuración."],
- f:[["Think time, mediana","1,4 min"],["Think time, p90","20,6 min"],["% del reloj de pared","92,3%"]]}
+{n:"Tokenizar",m:"texto → números",role:"El modelo nunca ve letras",
+ q:"El texto se parte en pedazos y cada pedazo se cambia por un número. Todo lo que viene después se mide en esas unidades, no en palabras.",
+ inf:"Nada: ocurre en la CPU del servidor.",
+ lat:"Imperceptible."},
+{n:"Enrutar",m:"elegir servidor",role:"A quién le toca",
+ q:"Se decide qué servidor atiende. Si esta conversación ya pasó por uno, conviene mandarla ahí: ese servidor todavía la recuerda.",
+ inf:"Una pieza más que operar, y que debe llevar la cuenta de dónde estuvo cada conversación.",
+ lat:"Elegir mal obliga a releer la conversación completa desde el principio."},
+{n:"Admitir",m:"aceptar o no",role:"Decir que no a tiempo",
+ q:"Si el sistema está lleno, hay que decidir a quién se le niega el paso. Decirlo tarde es peor: se gastó trabajo en alguien que igual se fue.",
+ inf:"Reglas de prioridad y una forma de rechazar sin que se caiga el resto.",
+ lat:"Sin este freno la espera no empeora de a poco: se desploma."},
+{n:"Encolar",m:"esperar turno",role:"La espera invisible",
+ q:"La solicitud espera hasta que haya lugar. Nadie ve esta etapa y suele ser la que más tiempo aporta.",
+ inf:"Define cuánta capacidad de reserva hay que pagar para que la fila no crezca.",
+ lat:"Mientras sobra lugar no se nota; al acercarse al límite se dispara de golpe."},
+{n:"Reservar memoria",m:"apartar espacio",role:"Guardar la conversación",
+ q:"Se aparta espacio en la GPU para recordar todo lo dicho hasta ahora. Ese apunte crece con cada palabra de la conversación.",
+ inf:"Consume la memoria de la GPU, que es el recurso escaso. Mientras más larga la conversación, menos gente cabe a la vez.",
+ lat:"Si no queda espacio hay que desalojar a alguien, y al volver su conversación se relee entera."},
+{n:"Leer la pregunta",m:"de una sola vez",role:"Prefill",
+ q:"El modelo lee de una vez todo lo que se le mandó: la pregunta, las instrucciones y la conversación previa.",
+ inf:"Pura capacidad de cálculo. Una sola solicitud larga ya ocupa la GPU completa, así que juntar varias no ayuda.",
+ lat:"Es lo que se tarda en aparecer la primera palabra. Texto de entrada largo, espera larga."},
+{n:"Mover la memoria",m:"entre servidores",role:"Traspaso",
+ q:"Cuando quien lee la pregunta y quien escribe la respuesta son máquinas distintas, el apunte de la conversación tiene que viajar.",
+ inf:"Exige red interna de alta velocidad. Dentro de una misma máquina es casi gratis; entre máquinas, cara y lenta.",
+ lat:"Se disimula haciéndolo mientras se calcula. Si no se disimula, se nota."},
+{n:"Escribir",m:"palabra por palabra",role:"Decode",
+ q:"La respuesta se genera de a una palabra. Para cada una, el modelo vuelve a repasar todo: sus propios parámetros y la conversación completa.",
+ inf:"Lo limita la velocidad de la memoria, no la potencia de cálculo. Por eso una GPU más nueva rinde menos de lo que promete.",
+ lat:"Marca el ritmo al que aparece el texto, y es casi todo el tiempo de la respuesta."},
+{n:"Atender a varios",m:"a la vez",role:"Batching continuo",
+ q:"La GPU no atiende a una persona: atiende a muchas juntas y rearma el grupo con cada palabra que escribe.",
+ inf:"Es lo que vuelve rentable el servidor. Sin esto haría falta una GPU por usuario.",
+ lat:"Tu espera pasa a depender de los demás: alguien con un texto enorme frena a todo el grupo."},
+{n:"Usar herramientas",m:"salir y volver",role:"El bucle del agente",
+ q:"El modelo pide ejecutar algo —buscar un dato, consultar un sistema, correr código— y el resultado vuelve como una pregunta nueva. Casi todas las vueltas de un agente son esto, no alguien escribiendo.",
+ inf:"La GPU queda reservada esperando algo que no controla y que puede tardar.",
+ lat:"Cada vuelta suma lo que tarde la herramienta más una lectura completa de la conversación otra vez."},
+{n:"Entregar",m:"mientras se genera",role:"Streaming",
+ q:"El texto se va devolviendo a medida que se escribe, para que se vea aparecer en vez de llegar de golpe.",
+ inf:"Nada relevante.",
+ lat:"Importa la regularidad más que la velocidad: un texto a tirones molesta más que uno parejo y algo más lento."},
+{n:"Sostener el contexto",m:"esperar a la persona",role:"Entre turnos",
+ q:"Terminada la respuesta, la persona lee y piensa. Su conversación sigue guardada esperando. Esa pausa humana es casi todo el tiempo de una sesión.",
+ inf:"Memoria de GPU ocupada sin producir nada. La alternativa —soltarla— obliga a releer todo cuando la persona vuelve.",
+ lat:"No afecta a esta respuesta: decide cuánto tarda la siguiente."}
 ];
 /* Geometría del árbol de flujo, en el espacio de diseño 1180×450 del viewBox.
    [x, y, ancho] por etapa; alto fijo 58. */
@@ -734,26 +647,24 @@ const DMD={x:912,y:129,r:34};      // rombo de decisión
    de la GPU solo ocupada (VRAM comprometida, SMs ociosos). Ahí está el argumento
    de utilización que sostiene todo el modelo de costos. */
 const SUBS={
-  gpu :{t:"GPU",  c:"--t3",     fill:1, l:"GPU calculando — los SMs trabajan"},
-  vram:{t:"VRAM", c:"--indigo", fill:0, l:"GPU solo ocupada — VRAM comprometida, SMs ociosos"},
+  gpu :{t:"GPU",  c:"--t3",     fill:1, l:"la GPU calcula"},
+  vram:{t:"VRAM", c:"--indigo", fill:0, l:"la GPU está ocupada sin calcular"},
   /* --muted y no --faint: a 8px, --faint daba 2,99 de contraste sobre el panel */
-  cpu :{t:"CPU",  c:"--muted",  fill:0, l:"CPU del host — no toca la GPU"},
+  cpu :{t:"CPU",  c:"--muted",  fill:0, l:"no toca la GPU"},
   /* --accent y no --t1: el verde daba 3,48 sobre fondo claro (4,85 / 7,94 con accent) */
-  net :{t:"RED",  c:"--accent", fill:0, l:"Fabric entre GPUs — NVLink o InfiniBand"},
-  ext :{t:"EXT",  c:"--t4",     fill:0, l:"Fuera del servidor — la GPU espera"}
+  net :{t:"RED",  c:"--accent", fill:0, l:"red entre servidores"},
+  ext :{t:"EXT",  c:"--t4",     fill:0, l:"la GPU espera algo de afuera"}
 };
 /* índice paralelo a STAGES */
 const SUB_OF=["cpu","cpu","cpu","cpu","vram","gpu","net","gpu","gpu","ext","cpu","vram"];
 
 const LOOPS=[
-  ["L1","--t2","Bucle de generación","decode ⇄ batch continuo · un giro por token (~252)"],
-  ["L2","--t4","Bucle de herramientas","el resultado vuelve como entrada · ~10,8 llamadas por solicitud"],
-  ["L3","--t0","Bucle conversacional","nuevo turno humano · ~9,2 solicitudes por sesión"]
+  ["L1","--t2","Escribir","una vuelta por cada palabra de la respuesta"],
+  ["L2","--t4","Herramientas","el resultado vuelve como pregunta nueva"],
+  ["L3","--t0","Conversación","la persona responde y todo empieza de nuevo"]
 ];
 
 (function(){
-  $("#legend").innerHTML=Object.values(BOUND).map(b=>
-    `<span class="lg"><span class="sw" style="background:var(${b.c})"></span>${esc(b.l)}</span>`).join("");
   $("#loops").innerHTML=LOOPS.map(([k,c,n,d])=>
     `<span class="lp"><b style="background:var(${c})">${k}</b>
       <span>${esc(n)}</span> ${esc(d)}</span>`).join("");
@@ -761,17 +672,21 @@ const LOOPS=[
   // leyenda de sustrato + recuento (responde: ¿dónde está la GPU?)
   const nGpu=SUB_OF.filter(k=>k==="gpu").length;
   const nMem=SUB_OF.filter(k=>k==="gpu"||k==="vram").length;
+  /* el relleno lleva estilos en línea: con background:currentColor el texto
+     quedaba del mismo color que el fondo, es decir invisible */
   $("#subs").innerHTML=Object.values(SUBS).map(s=>
-    `<span class="sd" style="color:var(${s.c})"><i class="${s.fill?"fill":""}">${s.t}</i>
+    `<span class="sd" style="color:var(${s.c})"><i ${s.fill
+       ?`style="background:var(${s.c});color:var(--panel);border-color:var(${s.c})"`:""
+     }>${s.t}</i>
       <span style="color:var(--muted)">${esc(s.l)}</span></span>`).join("")
-   +`<span class="tally">la GPU calcula en ${nGpu} de ${SUB_OF.length} etapas ·
-      su memoria queda comprometida en ${nMem} · se paga en las ${SUB_OF.length}</span>`;
+   +`<span class="tally">solo calcula en ${nGpu} de ${SUB_OF.length} etapas ·
+      se paga en las ${SUB_OF.length}</span>`;
 
   // nodos
   $("#flow").insertAdjacentHTML("beforeend", STAGES.map((s,i)=>{
     const [x,y,w]=POS[i], sb=SUBS[SUB_OF[i]];
     return `<button class="pstage" aria-pressed="${i===0}" data-i="${i}"
-      style="--st:var(${BOUND[s.b].c});--sc:var(${sb.c});left:${x}px;top:${y}px;width:${w}px;height:${NH}px">
+      style="--st:var(${sb.c});--sc:var(${sb.c});left:${x}px;top:${y}px;width:${w}px;height:${NH}px">
       <span class="pn">${String(i+1).padStart(2,"0")}</span>
       <span class="pl">${esc(s.n)}</span>
       <span class="pm">${esc(s.m)}</span>
@@ -816,30 +731,29 @@ const LOOPS=[
    +`<path d="M${DMD.x},${DMD.y-DMD.r} L${DMD.x+DMD.r},${DMD.y}
        L${DMD.x},${DMD.y+DMD.r} L${DMD.x-DMD.r},${DMD.y} z"
        fill="var(--panel-2)" stroke="var(--line)"/>
-     <text class="dmd" x="${DMD.x}" y="${DMD.y-3}" text-anchor="middle">¿qué</text>
-     <text class="dmd" x="${DMD.x}" y="${DMD.y+8}" text-anchor="middle">emitió?</text>`
+     <text class="wl" x="${DMD.x}" y="86" text-anchor="middle">¿pidió una herramienta?</text>`
    // rótulos de los cables
-   +`<text class="wl k" x="922" y="205" fill="var(--t4)">tool call</text>
-     <text class="wl" x="1056" y="150" text-anchor="end">texto / EOS</text>
+   +`<text class="wl k" x="922" y="205" fill="var(--t4)">sí</text>
+     <text class="wl" x="1056" y="150" text-anchor="end">no · ya terminó</text>
      <text class="wl k" x="656" y="186" text-anchor="end" fill="var(--t2)">L1 ·</text>
-     <text class="wl" x="656" y="199" text-anchor="end">un giro por token</text>
+     <text class="wl" x="656" y="199" text-anchor="end">una vuelta por palabra</text>
      <text class="wl k" x="596" y="332" text-anchor="end" fill="var(--t4)">L2 ·</text>
-     <text class="wl" x="600" y="332">el resultado vuelve como entrada</text>
+     <text class="wl" x="600" y="332">el resultado vuelve como pregunta</text>
      <text class="wl k" x="300" y="477" fill="var(--t0)">L3 ·</text>
-     <text class="wl" x="330" y="477">nuevo turno humano</text>`;
+     <text class="wl" x="330" y="477">la persona responde</text>`;
   function sel(i){
     $$(".pstage").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.i===i)));
     const s=STAGES[i];
     $("#detail").innerHTML=
-     `<div><h3>${esc(s.n)}</h3><div class="role">${esc(s.role)} · límite: ${esc(BOUND[s.b].l)}
-        <br><span style="color:var(${SUBS[SUB_OF[i]].c})">Se ejecuta en:
-        ${esc(SUBS[SUB_OF[i]].l)}</span></div>
-        <p class="d">${esc(s.d)}</p>
-        <div class="hard"><div class="eyebrow">Por qué es difícil</div>
-          <ul>${s.h.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div>
-      <div><div class="eyebrow" style="margin-bottom:.7rem">Cifras</div>
-        <dl class="facts">${s.f.map(([k,v])=>
-          `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl></div>`;
+     `<div><h3>${esc(s.n)}</h3>
+        <div class="role">${esc(s.role)}
+          <span style="color:var(${SUBS[SUB_OF[i]].c})"> · ${esc(SUBS[SUB_OF[i]].l)}</span></div>
+        <p class="d">${esc(s.q)}</p></div>
+      <div class="costs">
+        <div class="cost"><span class="eyebrow">Qué cuesta en infraestructura</span>
+          <p>${esc(s.inf)}</p></div>
+        <div class="cost lat"><span class="eyebrow">Qué cuesta en espera</span>
+          <p>${esc(s.lat)}</p></div></div>`;
   }
   $("#flow").addEventListener("click",e=>{
     const b=e.target.closest(".pstage"); if(b) sel(+b.dataset.i);
@@ -1083,35 +997,36 @@ function draw(r){
 "use strict";
 /* ═════════ 04 · consideraciones al TTFT ═════════ */
 (function(){
+  /* Barras proporcionales, pero con etiquetas cualitativas: interesa el orden de
+     magnitud entre pasos, no el segundo exacto. */
   const CHAIN=[
-   ["Object storage → nodo","pull inicial de la imagen y los pesos por red","~2 Gb/s efectivos",560,"--t4"],
-   ["NVMe local → RAM","lectura secuencial del safetensors","~7 GB/s",20,"--t2"],
-   ["RAM → VRAM por PCIe 5","copia host-to-device, 64 GB/s teóricos","~50 GB/s",2.8,"--t1"],
-   ["Sharding y warmup","repartir por TP, compilar kernels, capturar grafos CUDA","fijo",30,"--t2"],
-   ["Primer token servido","el pod recién ahora entra al balanceador","—",0,"--t0"]
+   ["Traer el modelo por la red","es el paso que domina todo lo demás","varios minutos",560,"--t4"],
+   ["Leerlo del disco","decenas de gigabytes","segundos",20,"--t2"],
+   ["Subirlo a la GPU","sorprendentemente rápido","casi instantáneo",2.8,"--t1"],
+   ["Prepararlo para atender","repartirlo y calentarlo","medio minuto",30,"--t2"],
+   ["Recién ahora recibe gente","antes de esto no sirve para nada","—",0,"--t0"]
   ];
   const mx=Math.max(...CHAIN.map(c=>c[3]));
   $("#chain").innerHTML=CHAIN.map((c,i)=>
    `<div class="link" style="--lc:var(${c[4]})">
       <span class="li">${String(i+1).padStart(2,"0")}</span>
-      <span class="ln">${esc(c[0])}<s>${esc(c[1])} · ${esc(c[2])}</s></span>
-      <span class="lt">${c[3]?dur(c[3]):"—"}</span>
+      <span class="ln">${esc(c[0])}<s>${esc(c[1])}</s></span>
+      <span class="lt">${esc(c[2])}</span>
       <span class="lbar"><i style="width:${100*c[3]/mx}%"></i></span>
     </div>`).join("")
    +`<div class="link" style="--lc:var(--t3);border-top-width:0">
-      <span class="li">Σ</span><span class="ln"><b>Arranque en frío total</b>
-      <s>y el autoescalado tiene que absorber esto</s></span>
-      <span class="lt">${dur(CHAIN.reduce((a,c)=>a+c[3],0))}</span></div>`;
+      <span class="li">Σ</span><span class="ln"><b>Encender un servidor: minutos</b>
+      <s>y se paga desde el primero</s></span></div>`;
 
   const PAR=[
-   ["Tensor parallel (TP)","Parte cada capa entre GPUs.",
-    "Un all-reduce por capa, en la ruta crítica de latencia. Quiere quedarse dentro del nodo: cruzar al vecino cambia NVLink por InfiniBand y la latencia se nota en cada token.","--t3"],
-   ["Pipeline parallel (PP)","Reparte capas por etapas.",
-    "Tolera enlaces lentos porque solo pasa activaciones entre etapas, pero introduce burbujas: hay que alimentarlo con microbatches o las GPUs se quedan mirando.","--t2"],
-   ["Expert parallel (EP)","Reparte expertos de un MoE.",
-    "Exige un all-to-all por capa. En EP128, dispatch + combine son ≈561 µs por capa MoE: sobre 61 capas, ~34 ms de comunicación pura. De ahí los pipelines de 5 etapas para solaparlo.","--t4"],
-   ["Réplicas (DP)","Copias completas del modelo.",
-    "Lo único que escala throughput de forma cómoda, y lo único que da redundancia real. También multiplica la VRAM y la factura: es la respuesta caballo de fuerza.","--t0"]
+   ["Partir cada capa","La misma capa se reparte entre varias GPUs.",
+    "Es lo más rápido, pero obliga a que las GPUs se hablen en cada palabra que escriben. Por eso solo funciona bien dentro de una misma máquina.","--t3"],
+   ["Partir por etapas","Cada GPU se queda con una parte del modelo, en cadena.",
+    "Aguanta redes más lentas, pero si no le llega trabajo constante las GPUs se quedan esperando su turno.","--t2"],
+   ["Repartir especialistas","Algunos modelos son muchos submodelos y solo se usan algunos por palabra.",
+    "Permite modelos enormes, a cambio de mucha conversación entre GPUs y del riesgo de que unos especialistas se saturen y otros no hagan nada.","--t4"],
+   ["Copias completas","Varios servidores idénticos, cada uno con el modelo entero.",
+    "Lo único que atiende a más gente de forma simple, y lo único que da respaldo real si una máquina se cae. También multiplica el costo.","--t0"]
   ];
   $("#par").innerHTML=PAR.map(p=>
    `<div class="card" style="border-top:2px solid var(${p[3]})">
@@ -1119,45 +1034,33 @@ function draw(r){
       <p style="font-size:.92rem;margin-top:.4rem"><b>${esc(p[1])}</b></p>
       <p class="note">${esc(p[2])}</p></div>`).join("");
 
-  const KVT=320*1024;
-  $("#ictab").innerHTML=[4096,32768,131072].map(c=>{
-    const b=c*KVT;
-    return `<tr><td class="n">${fmt(c)} tok</td><td class="n">${bytes(b)}</td>
-      <td class="n">${dur(b/450e9)}</td><td class="n">${dur(b/190e9)}</td>
-      <td class="n">${dur(b/43e9)}</td></tr>`;}).join("");
-
-  const DS=[["Nodos H800 (media)","226,75","1.814 GPUs"],
-   ["Prefill","EP32","4 nodos"],["Decode","EP144","18 nodos"],
-   ["Tokens de entrada","608 B","56,3% en caché"],
-   ["Tokens de salida","168 B","—"],
-   ["Prefill por nodo","73,7k t/s","incl. aciertos"],
-   ["Decode por nodo","14,8k t/s","—"],
-   ["Velocidad al usuario","20–22 t/s","percibida"],
-   ["KV medio por token de salida","4.989 tok","—"],
-   ["Costo diario","US$ 87.072","a US$2/GPU-h"],
-   ["Margen declarado","545%","sobre tarifa R1"],
-   ["Prefill : decode","1 : 1,38","en horas-nodo"]];
-  $("#ds").innerHTML=DS.map(([k,v,u])=>
-   `<div class="kpi" style="--kc:var(--t0)"><div class="k">${esc(k)}</div>
-      <div class="v">${esc(v)}</div><div class="u">${esc(u)}</div></div>`).join("");
+  /* Comparación cualitativa: la relación entre las barras es la real (~10×),
+     pero no se rotula ningún GB/s. */
+  $("#icbars").innerHTML=[
+   ["Entre GPUs de la misma máquina",100,"--t0","rápido"],
+   ["Entre máquinas distintas",10,"--t3","~10 veces más lento"]
+  ].map(([l,w,c,v])=>
+   `<div class="bar-row"><span class="bl">${esc(l)}</span>
+      <span class="track"><span class="seg" style="width:${w}%;background:var(${c})"></span></span>
+      <span class="bv">${esc(v)}</span></div>`).join("");
 
   const FAILS=[
-   ["Muere una GPU, cae la réplica entera","--t4",
-    "En un grupo de TP todas las GPUs participan en cada capa. Si una falla, no se degrada el servicio: desaparece la réplica completa. La unidad de redundancia no es la GPU, es el nodo — y por eso N+1 significa comprar otro nodo, no otra tarjeta."],
-   ["Desbalance de carga entre pools","--t3",
-    "Con prefill y decode separados hay que acertar la proporción. Mooncake documenta que 2P+2D rinde peor que 3P+1D por desajuste, y que la proporción se prefija a mano. Equivocarse es capacidad pagada y ociosa."],
-   ["Oscilación en antifase","--t3",
-    "Rechazar solicitudes de forma ingenua bajo carga hace que los pools de prefill y decode se alternen entre saturado y vacío. Es un lazo de control mal amortiguado, y no se arregla añadiendo GPUs."],
-   ["Expertos calientes en un MoE","--t2",
-    "El enrutamiento no reparte parejo: unos expertos reciben muchos más tokens. La GPU que los aloja se vuelve el straggler y marca el ritmo de todas. DeepSeek corre un balanceador de expertos dedicado y expertos redundantes solo para esto."],
+   ["Se muere una GPU y cae el servidor completo","--t4",
+    "Cuando el modelo está repartido, todas las GPUs trabajan en cada palabra. Si una falla no se degrada el servicio: desaparece. Por eso el respaldo se compra de a máquinas completas, no de a tarjetas."],
+   ["La capacidad queda mal repartida","--t3",
+    "Leer preguntas y escribir respuestas se pueden separar en grupos de máquinas distintos, y hay que acertar la proporción a mano. Equivocarse deja capacidad pagada sin usar."],
+   ["El sistema se pone a oscilar","--t3",
+    "Rechazar mal las solicitudes cuando hay saturación hace que las máquinas alternen entre llenas y vacías. Es un problema de control, y no se arregla comprando más GPUs."],
+   ["Una parte del modelo se satura","--t2",
+    "En modelos hechos de especialistas, algunos reciben mucho más trabajo que otros. La GPU que los aloja frena a todas las demás."],
    ["El vecino ruidoso, dentro de la GPU","--t2",
-    "Con batching continuo, un prompt gigante insertado en el lote alarga el paso de todos. La latencia de un usuario depende de quién más esté conectado, y un incidente es casi irreproducible porque el lote exacto no se repite."],
-   ["Recomputar por desalojo","--t3",
-    "Si el KV cache se llena hay que desalojar sesiones y recomputar su contexto al volver. Ocurre exactamente cuando hay más carga: el sistema se castiga a sí mismo justo en el peor momento."],
-   ["La caché miente sobre tu suerte","--t2",
-    "Los agentes reportan 95,7% de aciertos de prefijo, pero una plataforma en producción mide que más del 40% de las solicitudes tienen aciertos nulos o mínimos. El reuso es alto dentro de una sesión; a nivel de flota depende del enrutamiento."],
-   ["Nadie de guardia","--t4",
-    "Actualizaciones sin caída, drenar nodos, rotar pesos, vigilar p95, responder a las 3 de la mañana. Es el único componente que no aparece en ninguna comparación de costo por token, y suele ser el más caro."]
+    "Como la GPU atiende a varios a la vez, alguien con un texto enorme alarga la espera de todo el grupo. La latencia de una persona depende de quién más esté conectado."],
+   ["Se llena la memoria y hay que rehacer trabajo","--t3",
+    "Cuando no queda espacio, alguna conversación se descarta y al volver se relee completa. Pasa justo cuando hay más carga: el sistema se castiga solo en el peor momento."],
+   ["Lo que ahorras a veces no aparece","--t2",
+    "Reutilizar lo ya calculado funciona muy bien dentro de una conversación, pero a nivel de flota depende de que cada persona vuelva al mismo servidor. Si el reparto no lo respeta, el ahorro se evapora."],
+   ["Alguien tiene que estar de guardia","--t4",
+    "Actualizar sin cortar el servicio, vaciar máquinas, cambiar versiones de modelo, mirar las esperas, contestar a las tres de la mañana. Es lo único que no aparece en ninguna comparación de precio por token, y suele ser lo más caro."]
   ];
   $("#fails").innerHTML=FAILS.map(f=>
    `<div class="card" style="border-left:3px solid var(${f[1]})">
@@ -1165,28 +1068,19 @@ function draw(r){
       <p class="note" style="margin-top:.5rem">${esc(f[2])}</p></div>`).join("");
 
   const AG=[
-   ["Prefijo en caché por paso","126.180 tok","467.082","918.111 (p99)",
-    "Hay que sostener cientos de miles de tokens por sesión viva."],
-   ["Tokens nuevos por paso","857 tok","5.342","232.206 (p99)",
-    "Un factor 271 entre la mediana y el p99: dimensionar por la mediana garantiza incumplir."],
-   ["Salida por paso","252 tok","1.671","6.571 (p99)",
-    "La salida es corta; el trabajo está en la entrada."],
-   ["Ratio entrada:salida","≈294:1","—","—",
-    "Y aun así el decode se lleva 91–98,6% del tiempo, porque el prefijo llega cacheado."],
-   ["Aciertos de caché de prefijo","95,7%","97,5% tras herramienta","84,4% tras humano",
-    "El 88% de las rondas responde a una herramienta, no a una persona."],
-   ["Pausa humana entre turnos","1,4 min","20,6 min","46,7 min (media)",
-    "El 92,3% del reloj de pared de una sesión es alguien pensando."],
-   ["Ejecución de herramientas","0,3 s","13,6 s","18,4 s (media)",
-    "El 4% de las llamadas concentra el 85% del tiempo total."],
-   ["Llegadas medidas","0,019–0,21 req/s","—","—",
-    "Tasa bajísima y costo por solicitud enorme: el peor caso para dimensionar."],
-   ["Costo por sesión","US$ 0,61","—","US$ 178 (p99)",
-    "Un factor 292 entre mediana y p99. El promedio no describe a nadie."]
+   ["Casi nadie está escribiendo","--t4",
+    "La mayoría de las vueltas no las pide una persona: las pide el propio agente, respondiendo al resultado de una herramienta. El sistema trabaja para sí mismo."],
+   ["Las conversaciones son enormes y desparejas","--t3",
+    "Unas ocupan poco y otras muchísimo, y la diferencia entre el caso típico y el caso frecuente es brutal. Dimensionar por el promedio garantiza quedar corto."],
+   ["Llega poca gente y cada uno cuesta mucho","--t2",
+    "No es un servicio de muchas solicitudes chicas, sino de pocas solicitudes carísimas. Es el escenario más difícil de planificar: no se compensa por volumen."],
+   ["El reloj lo maneja el humano","--t0",
+    "Casi todo el tiempo de una sesión es alguien leyendo y pensando, con su conversación ocupando memoria de GPU sin producir nada."]
   ];
-  $("#agtab").innerHTML=AG.map(a=>
-   `<tr><td>${esc(a[0])}</td><td class="n">${esc(a[1])}</td><td class="n">${esc(a[2])}</td>
-     <td class="n">${esc(a[3])}</td><td style="color:var(--muted);font-size:.8rem">${esc(a[4])}</td></tr>`).join("");
+  $("#ag").innerHTML=AG.map(a=>
+   `<div class="card" style="border-left:3px solid var(${a[1]})">
+      <h4 style="font:600 13px/1.25 var(--f-disp);letter-spacing:.06em;text-transform:uppercase">${esc(a[0])}</h4>
+      <p class="note" style="margin-top:.5rem">${esc(a[2])}</p></div>`).join("");
 })();
 </script>
 </body>
