@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Gradient Descent on 3D Surface</title>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+            background: #0b0f14;
+            color: #e6edf3;
+        }
+
+        #wrap {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            height: 100vh;
+        }
+
+        #panel {
+            padding: 18px 16px;
+            border-right: 1px solid #1f2a37;
+            background: #0d141c;
+        }
+
+        h1 {
+            font-size: 16px;
+            margin: 0 0 12px;
+            font-weight: 650;
+        }
+
+        .row {
+            margin: 10px 0 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            opacity: .9;
+            margin-bottom: 6px;
+        }
+
+        select,
+        button,
+        input[type="range"] {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #263244;
+            background: #0b0f14;
+            color: #e6edf3;
+            padding: 10px 10px;
+            font-size: 13px;
+        }
+
+        input[type="range"] {
+            padding: 8px 10px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button.primary {
+            background: #12263a;
+            border-color: #2b3f5f;
+        }
+
+        button.danger {
+            background: #2a1414;
+            border-color: #5a2b2b;
+        }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .hint {
+            font-size: 12px;
+            opacity: .75;
+            line-height: 1.35;
+        }
+
+        .stat {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 12px;
+            background: #0b0f14;
+            border: 1px solid #263244;
+            border-radius: 12px;
+            padding: 10px;
+            white-space: pre;
+            overflow: auto;
+            max-height: 210px;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .pill {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 10px;
+            border: 1px solid #263244;
+            border-radius: 999px;
+            font-size: 12px;
+            opacity: .9;
+            background: #0b0f14;
+        }
+
+        .topbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0 14px;
+        }
+
+        .kbd {
+            border: 1px solid #2b3f5f;
+            padding: 1px 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            opacity: .9;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrap">
+        <div id="panel">
+            <h1>Gradient Descent (3D surface)</h1>
+
+            <div class="topbar">
+                <span class="pill">Click surface: <span class="kbd">place start</span></span>
+                <span class="pill">Drag: <span class="kbd">orbit</span></span>
+            </div>
+
+            <div class="row">
+                <label for="fn">Surface</label>
+                <select id="fn">
+                    <option value="bowl">Convex bowl (easy)</option>
+                    <option value="rosenbrock">Rosenbrock (banana valley)</option>
+                    <option value="ripple">Rippled bowl (local minima)</option>
+                    <option value="rastrigin">Rastrigin (many minima)</option>
+                    <option value="eggcrate">Eggcrate (wavy bowl)</option>
+                </select>
+                <div class="hint" style="margin-top:8px;">
+                    The algorithm updates <b>(x,y)</b> by stepping opposite to the gradient of <b>z=f(x,y)</b>.
+                </div>
+            </div>
+
+            <div class="row">
+                <label for="lr">Learning rate: <span id="lrVal"></span></label>
+                <input id="lr" type="range" min="0.001" max="0.5" value="0.06" step="0.001" />
+                <div class="hint">Too high → diverges/oscillates; too low → slow convergence.</div>
+            </div>
+
+            <div class="row">
+                <label for="steps">Steps per second: <span id="spsVal"></span></label>
+                <input id="steps" type="range" min="1" max="240" value="60" step="1" />
+            </div>
+
+            <div class="grid2">
+                <button class="primary" id="startBtn">Start</button>
+                <button id="pauseBtn">Pause</button>
+            </div>
+            <div class="grid2" style="margin-top:10px;">
+                <button class="danger" id="resetBtn">Reset path</button>
+                <button id="randomBtn">Random start</button>
+            </div>
+
+            <div class="row" style="margin-top:14px;">
+                <label>Diagnostics</label>
+                <div class="stat" id="stat"></div>
+                <div class="hint" style="margin-top:8px;">
+                    Tip: try Rosenbrock with lr ~ 0.002–0.01.
+                </div>
+            </div>
+        </div>
+
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <!-- Map bare specifier "three" so OrbitControls can resolve it when loaded via file:// -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <!-- Three.js via CDN -->
+    <script type="module">
+        import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+        import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+
+        (() => {
+            // ---------- Surface definitions ----------
+            const Surfaces = {
+                bowl: {
+                    name: "Convex bowl",
+                    // f(x,y) = x^2 + y^2
+                    f: (x, y) => (x * x + y * y),
+                    grad: (x, y) => ({ gx: 2 * x, gy: 2 * y }),
+                    domain: { min: -2.5, max: 2.5 }
+                },
+                rosenbrock: {
+                    name: "Rosenbrock",
+                    // f(x,y) = (a-x)^2 + b(y-x^2)^2
+                    f: (x, y) => {
+                        const a = 1, b = 50;
+                        const t1 = (a - x);
+                        const t2 = (y - x * x);
+                        return t1 * t1 + b * t2 * t2;
+                    },
+                    grad: (x, y) => {
+                        const a = 1, b = 50;
+                        // df/dx = -2(a-x) - 4bx(y-x^2)
+                        // df/dy =  2b(y-x^2)
+                        const t2 = (y - x * x);
+                        return {
+                            gx: -2 * (a - x) - 4 * b * x * t2,
+                            gy: 2 * b * t2
+                        };
+                    },
+                    domain: { min: -2.0, max: 2.0 }
+                },
+                ripple: {
+                    name: "Rippled bowl",
+                    // f(x,y)=0.4(x^2+y^2)+0.25 sin(3x)cos(3y)
+                    f: (x, y) => 0.4 * (x * x + y * y) + 0.25 * Math.sin(3 * x) * Math.cos(3 * y),
+                    grad: (x, y) => {
+                        // df/dx=0.8x + 0.25*3*cos(3x)*cos(3y)
+                        // df/dy=0.8y + 0.25*(-3)*sin(3x)*sin(3y)
+                        return {
+                            gx: 0.8 * x + 0.75 * Math.cos(3 * x) * Math.cos(3 * y),
+                            gy: 0.8 * y - 0.75 * Math.sin(3 * x) * Math.sin(3 * y)
+                        };
+                    },
+                    domain: { min: -3.0, max: 3.0 }
+                },
+                rastrigin: {
+                    name: "Rastrigin",
+                    // f(x,y) = A*2 + (x^2 - A cos(2πx)) + (y^2 - A cos(2πy))
+                    f: (x, y) => {
+                        const A = 10, twoPi = Math.PI * 2;
+                        return 2 * A
+                            + (x * x - A * Math.cos(twoPi * x))
+                            + (y * y - A * Math.cos(twoPi * y));
+                    },
+                    grad: (x, y) => {
+                        const A = 10, twoPi = Math.PI * 2;
+                        return {
+                            gx: 2 * x + A * twoPi * Math.sin(twoPi * x),
+                            gy: 2 * y + A * twoPi * Math.sin(twoPi * y)
+                        };
+                    },
+                    domain: { min: -3.0, max: 3.0 }
+                },
+                eggcrate: {
+                    name: "Eggcrate",
+                    // f(x,y) = x^2 + y^2 + 25(sin^2 x + sin^2 y)
+                    f: (x, y) => x * x + y * y + 25 * (Math.sin(x) ** 2 + Math.sin(y) ** 2),
+                    grad: (x, y) => {
+                        // derivative of sin^2 t is sin(2t)
+                        return {
+                            gx: 2 * x + 25 * Math.sin(2 * x),
+                            gy: 2 * y + 25 * Math.sin(2 * y)
+                        };
+                    },
+                    domain: { min: -4.0, max: 4.0 }
+                }
+            };
+
+            // ---------- UI ----------
+            const canvas = document.getElementById("canvas");
+            const fnSel = document.getElementById("fn");
+            const lrInp = document.getElementById("lr");
+            const lrVal = document.getElementById("lrVal");
+            const spsInp = document.getElementById("steps");
+            const spsVal = document.getElementById("spsVal");
+            const startBtn = document.getElementById("startBtn");
+            const pauseBtn = document.getElementById("pauseBtn");
+            const resetBtn = document.getElementById("resetBtn");
+            const randomBtn = document.getElementById("randomBtn");
+            const statEl = document.getElementById("stat");
+
+            function setText() {
+                lrVal.textContent = Number(lrInp.value).toFixed(3);
+                spsVal.textContent = spsInp.value;
+            }
+            setText();
+            lrInp.addEventListener("input", setText);
+            spsInp.addEventListener("input", setText);
+
+            // ---------- Three.js scene ----------
+            const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+            renderer.setClearColor(0x0b0f14, 1);
+
+            const scene = new THREE.Scene();
+
+            const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 200);
+            camera.position.set(5, 4.2, 6);
+
+            const controls = new OrbitControls(camera, canvas);
+            controls.enableDamping = true;
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambient);
+
+            const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+            dir.position.set(6, 10, 4);
+            scene.add(dir);
+
+            // Axes helper (subtle)
+            const axes = new THREE.AxesHelper(3.5);
+            axes.material.transparent = true;
+            axes.material.opacity = 0.35;
+            scene.add(axes);
+
+            // Ground grid
+            const grid = new THREE.GridHelper(12, 24, 0x314158, 0x1f2a37);
+            grid.material.transparent = true;
+            grid.material.opacity = 0.35;
+            scene.add(grid);
+
+            // ---------- Mesh builders ----------
+            let surfaceMesh = null;
+            let surfaceKey = fnSel.value;
+            let surface = Surfaces[surfaceKey];
+
+            const surfaceMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1f6feb,
+                roughness: 0.75,
+                metalness: 0.05,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.85
+            });
+
+            function buildSurfaceMesh() {
+                if (surfaceMesh) {
+                    scene.remove(surfaceMesh);
+                    surfaceMesh.geometry.dispose();
+                }
+                surfaceKey = fnSel.value;
+                surface = Surfaces[surfaceKey];
+
+                const { min, max } = surface.domain;
+                const size = max - min;
+
+                const seg = 120; // resolution
+                const geom = new THREE.PlaneGeometry(size, size, seg, seg);
+                geom.rotateX(-Math.PI / 2);
+
+                // displace vertices by z = f(x,y) scaled
+                const pos = geom.attributes.position;
+                let zMin = Infinity, zMax = -Infinity;
+
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i);
+                    const y = pos.getZ(i);     // plane is XZ after rotation; use Z as y-coordinate
+                    const z = surface.f(x, y);
+                    pos.setY(i, z);
+                    zMin = Math.min(zMin, z);
+                    zMax = Math.max(zMax, z);
+                }
+                pos.needsUpdate = true;
+                geom.computeVertexNormals();
+
+                // normalize vertical scale for nicer viewing
+                // We'll scale the mesh in Y so it doesn't become too tall for Rosenbrock.
+                const span = zMax - zMin;
+                const desired = 2.2;
+                const yScale = span > 1e-9 ? (desired / span) : 1;
+                const mesh = new THREE.Mesh(geom, surfaceMaterial);
+                mesh.scale.y = yScale;
+                mesh.userData.yScale = yScale;
+                surfaceMesh = mesh;
+                scene.add(surfaceMesh);
+
+                // reposition camera a bit
+                controls.target.set(0, 0.5, 0);
+                controls.update();
+
+                // reset point/path
+                resetPath(true);
+            }
+
+            // ---------- Descent point + path ----------
+            const pointGeom = new THREE.SphereGeometry(0.08, 20, 20);
+            const pointMat = new THREE.MeshStandardMaterial({ color: 0xffd33d, roughness: 0.4, metalness: 0.1 });
+            const point = new THREE.Mesh(pointGeom, pointMat);
+            scene.add(point);
+
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            let pathPoints = []; // array of THREE.Vector3
+            let pathLine = null;
+
+            function rebuildPathLine() {
+                if (pathLine) {
+                    scene.remove(pathLine);
+                    pathLine.geometry.dispose();
+                    pathLine.material.dispose();
+                }
+                const geom = new THREE.BufferGeometry().setFromPoints(pathPoints);
+                const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+                pathLine = new THREE.Line(geom, mat);
+                scene.add(pathLine);
+            }
+
+            function setPointXY(x, y) {
+                const z = surface.f(x, y);
+                const yScale = surfaceMesh?.userData?.yScale ?? 1;
+                // plane geometry uses X (x) and Z (y), and Y is height
+                point.position.set(x, z * yScale, y);
+            }
+
+            function getPointXY() {
+                return { x: point.position.x, y: point.position.z };
+            }
+
+            function resetPath(keepPoint = false) {
+                pathPoints = [];
+                if (!keepPoint) {
+                    // default start
+                    setPointXY(1.6, 1.1);
+                }
+                pathPoints.push(point.position.clone());
+                rebuildPathLine();
+                iter = 0;
+                running = false;
+                paused = false;
+                pauseBtn.textContent = "Pause";
+                startBtn.textContent = "Start";
+                lastStepTime = 0;
+                updateStats(0, 0, 0);
+            }
+
+            // Click to place start point on the surface
+            function onPointerDown(ev) {
+                if (!surfaceMesh) return;
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -(((ev.clientY - rect.top) / rect.height) * 2 - 1);
+
+                raycaster.setFromCamera(mouse, camera);
+                const hits = raycaster.intersectObject(surfaceMesh, false);
+                if (!hits.length) return;
+
+                const hit = hits[0].point;  // hit.x, hit.z are our (x,y), hit.y is height (scaled)
+                // convert hit.y back to unscaled z if needed
+                // but we only need x,y to re-evaluate f(x,y) precisely.
+                const x = hit.x;
+                const y = hit.z;
+                // clamp into domain
+                const { min, max } = surface.domain;
+                const cx = Math.max(min, Math.min(max, x));
+                const cy = Math.max(min, Math.min(max, y));
+                setPointXY(cx, cy);
+                resetPath(true);
+            }
+
+            canvas.addEventListener("pointerdown", (ev) => {
+                // If user is orbiting (dragging), OrbitControls will also handle it.
+                // But pointerdown still fires; we place the point only if it was a simple click.
+                // We'll do a small heuristic: only left click and not on modifier keys.
+                if (ev.button !== 0) return;
+                if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
+
+                // Place point only if it's a click, not a drag
+                const downX = ev.clientX, downY = ev.clientY;
+                let moved = false;
+
+                const onMove = (e) => {
+                    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 4) moved = true;
+                };
+                const onUp = (e) => {
+                    window.removeEventListener("pointermove", onMove);
+                    window.removeEventListener("pointerup", onUp);
+                    if (!moved) onPointerDown(ev);
+                };
+                window.addEventListener("pointermove", onMove);
+                window.addEventListener("pointerup", onUp);
+            });
+
+            // ---------- Gradient descent animation ----------
+            let running = false;
+            let paused = false;
+            let iter = 0;
+
+            let lastStepTime = 0;
+
+            function stepOnce() {
+                const lr = Number(lrInp.value);
+                const { x, y } = getPointXY();
+                const g = surface.grad(x, y);
+
+                // basic GD update
+                let nx = x - lr * g.gx;
+                let ny = y - lr * g.gy;
+
+                // clamp to domain
+                const { min, max } = surface.domain;
+                nx = Math.max(min, Math.min(max, nx));
+                ny = Math.max(min, Math.min(max, ny));
+
+                // stop if tiny movement
+                const dx = nx - x, dy = ny - y;
+                const move = Math.hypot(dx, dy);
+
+                setPointXY(nx, ny);
+                pathPoints.push(point.position.clone());
+                if (pathPoints.length > 3000) pathPoints.shift(); // keep memory bounded
+                rebuildPathLine();
+
+                const fval = surface.f(nx, ny);
+                const gnorm = Math.hypot(g.gx, g.gy);
+                iter += 1;
+                updateStats(iter, fval, gnorm);
+
+                // convergence threshold
+                if (move < 1e-5 || gnorm < 1e-5) {
+                    running = false;
+                    startBtn.textContent = "Start";
+                }
+            }
+
+            function updateStats(i, fval, gnorm) {
+                const { x, y } = getPointXY();
+                statEl.textContent =
+                    `iter: ${i}
+x:    ${x.toFixed(6)}
+y:    ${y.toFixed(6)}
+f(x,y): ${fval.toFixed(6)}
+|∇f|:  ${gnorm.toFixed(6)}
+lr:   ${Number(lrInp.value).toFixed(3)}
+surface: ${surfaceKey}`;
+            }
+
+            startBtn.addEventListener("click", () => {
+                if (!running) {
+                    running = true;
+                    paused = false;
+                    startBtn.textContent = "Running…";
+                    pauseBtn.textContent = "Pause";
+                }
+            });
+
+            pauseBtn.addEventListener("click", () => {
+                if (!running && !paused) return;
+                paused = !paused;
+                pauseBtn.textContent = paused ? "Resume" : "Pause";
+                if (!paused) {
+                    running = true;
+                    startBtn.textContent = "Running…";
+                } else {
+                    running = false;
+                    startBtn.textContent = "Start";
+                }
+            });
+
+            resetBtn.addEventListener("click", () => resetPath(true));
+
+            randomBtn.addEventListener("click", () => {
+                const { min, max } = surface.domain;
+                const rx = min + Math.random() * (max - min);
+                const ry = min + Math.random() * (max - min);
+                setPointXY(rx, ry);
+                resetPath(true);
+            });
+
+            fnSel.addEventListener("change", () => {
+                buildSurfaceMesh();
+            });
+
+            // ---------- Resize + render loop ----------
+            function onResize() {
+                const w = canvas.clientWidth;
+                const h = canvas.clientHeight;
+                renderer.setSize(w, h, false);
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+            }
+            window.addEventListener("resize", onResize);
+
+            function animate(t) {
+                requestAnimationFrame(animate);
+                onResize();
+                controls.update();
+
+                const sps = Number(spsInp.value);
+                const msPerStep = 1000 / sps;
+
+                if (running && !paused) {
+                    if (t - lastStepTime >= msPerStep) {
+                        // do multiple steps if the tab was throttled
+                        const stepsToDo = Math.min(10, Math.floor((t - lastStepTime) / msPerStep));
+                        for (let k = 0; k < stepsToDo; k++) stepOnce();
+                        lastStepTime = t;
+                    }
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            // init
+            buildSurfaceMesh();
+            resetPath(false);
+            requestAnimationFrame(animate);
+        })();
+    </script>
+</body>
+
+</html>

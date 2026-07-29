@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Servir un LLM a escala — anatomía de «correr el modelo»</title>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Lectura térmica de un sistema de inferencia.
+   Frío (teal) = nominal / ocioso. Cálido = saturación.
+   El extremo cálido es SEMÁNTICO: solo carga, nunca decoración.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --ground:#0F1319; --panel:#171D26; --panel-2:#1E2530; --line:#2A3340;
+  --ink:#E6EAF0; --ink-dim:#B3BECC; --muted:#8794A6; --faint:#5C6878;
+  --accent:#3FBFD9; --accent-ink:#0B1418; --indigo:#7C8FF0;
+  --t0:#3FBFD9; --t1:#8BD450; --t2:#F2B93B; --t3:#EE6B3B; --t4:#E23D4E;
+  --ok:#8BD450; --warn:#F2B93B; --crit:#E23D4E;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 8px 24px -12px rgba(0,0,0,.6);
+  --f-disp:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",
+           "Roboto Condensed",system-ui,sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  --f-data:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sp:clamp(1rem,2.2vw,1.75rem);
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --ground:#F4F6F9; --panel:#FFFFFF; --panel-2:#EDF1F6; --line:#D5DDE7;
+    --ink:#101620; --ink-dim:#33404F; --muted:#5A6673; --faint:#8A96A5;
+    --accent:#0E7C93; --accent-ink:#FFFFFF; --indigo:#4256C8;
+    --t0:#0E7C93; --t1:#4E9B22; --t2:#B8801A; --t3:#C9512A; --t4:#B3202F;
+    --ok:#3F7F1C; --warn:#9C6A12; --crit:#B3202F;
+    --shadow:0 1px 2px rgba(16,22,32,.06), 0 10px 24px -16px rgba(16,22,32,.28);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1319; --panel:#171D26; --panel-2:#1E2530; --line:#2A3340;
+  --ink:#E6EAF0; --ink-dim:#B3BECC; --muted:#8794A6; --faint:#5C6878;
+  --accent:#3FBFD9; --accent-ink:#0B1418; --indigo:#7C8FF0;
+  --t0:#3FBFD9; --t1:#8BD450; --t2:#F2B93B; --t3:#EE6B3B; --t4:#E23D4E;
+  --ok:#8BD450; --warn:#F2B93B; --crit:#E23D4E;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+:root[data-theme="light"]{
+  --ground:#F4F6F9; --panel:#FFFFFF; --panel-2:#EDF1F6; --line:#D5DDE7;
+  --ink:#101620; --ink-dim:#33404F; --muted:#5A6673; --faint:#8A96A5;
+  --accent:#0E7C93; --accent-ink:#FFFFFF; --indigo:#4256C8;
+  --t0:#0E7C93; --t1:#4E9B22; --t2:#B8801A; --t3:#C9512A; --t4:#B3202F;
+  --ok:#3F7F1C; --warn:#9C6A12; --crit:#B3202F;
+  --shadow:0 1px 2px rgba(16,22,32,.06), 0 10px 24px -16px rgba(16,22,32,.28);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font:16px/1.55 var(--f-body); overflow-x:hidden;
+}
+.wrap{max-width:1180px; margin:0 auto; padding:0 var(--sp)}
+h1,h2,h3,h4{margin:0; text-wrap:balance; font-weight:600}
+p{margin:0}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+/* eyebrow: etiqueta de instrumento */
+.eyebrow{
+  font:600 11px/1 var(--f-disp); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--faint);
+}
+.num{font-family:var(--f-data); font-variant-numeric:tabular-nums}
+
+/* ── cabecera ── */
+header.top{border-bottom:1px solid var(--line); background:var(--panel)}
+.top-in{display:flex; flex-wrap:wrap; gap:1rem 2rem; align-items:flex-end;
+  justify-content:space-between; padding:clamp(1.4rem,3vw,2.4rem) 0 1.2rem}
+h1{font:600 clamp(1.9rem,4.4vw,3rem)/1.02 var(--f-disp);
+  letter-spacing:-.005em; text-transform:uppercase}
+h1 em{font-style:normal; color:var(--accent)}
+.sub{margin-top:.6rem; max-width:62ch; color:var(--ink-dim); font-size:.97rem}
+.meta{font:500 11px/1.7 var(--f-disp); letter-spacing:.1em; text-transform:uppercase;
+  color:var(--faint); text-align:right}
+
+/* ── navegación por vistas ── */
+nav.tabs{position:sticky; top:0; z-index:20; background:var(--panel);
+  border-bottom:1px solid var(--line)}
+.tabs-in{display:flex; gap:0; overflow-x:auto; scrollbar-width:thin}
+.tab{
+  appearance:none; background:none; border:0; border-bottom:2px solid transparent;
+  color:var(--muted); cursor:pointer; padding:.85rem 1.05rem; white-space:nowrap;
+  font:600 12px/1 var(--f-disp); letter-spacing:.11em; text-transform:uppercase;
+  display:flex; align-items:baseline; gap:.5rem;
+}
+.tab i{font-family:var(--f-data); font-style:normal; font-size:10px; color:var(--faint)}
+.tab:hover{color:var(--ink-dim)}
+.tab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--accent)}
+.tab[aria-selected="true"] i{color:var(--accent)}
+
+/* ── vistas ── */
+.view{display:none; padding:clamp(1.6rem,3.4vw,2.8rem) 0 4rem}
+.view.on{display:block}
+.lede{max-width:70ch; color:var(--ink-dim); font-size:1.02rem}
+.lede strong{color:var(--ink); font-weight:600}
+h2.vt{font:600 clamp(1.25rem,2.6vw,1.7rem)/1.15 var(--f-disp);
+  text-transform:uppercase; letter-spacing:.02em; margin-bottom:.5rem}
+h3.st{font:600 13px/1 var(--f-disp); letter-spacing:.13em; text-transform:uppercase;
+  color:var(--faint); margin:2.2rem 0 .9rem}
+
+.card{background:var(--panel); border:1px solid var(--line); border-radius:3px;
+  padding:1.1rem 1.2rem; box-shadow:var(--shadow)}
+.grid{display:grid; gap:.9rem}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(168px,1fr))}
+.scroll-x{overflow-x:auto}
+
+/* ── vista 1: el mito ── */
+.myth{display:grid; gap:1.1rem; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  margin-top:1.6rem}
+.myth-col h4{font:600 12px/1 var(--f-disp); letter-spacing:.13em; text-transform:uppercase;
+  margin-bottom:.7rem}
+.myth-naive h4{color:var(--t0)}
+.myth-real h4{color:var(--t3)}
+ol.steps{list-style:none; margin:0; padding:0; counter-reset:s}
+ol.steps li{counter-increment:s; display:flex; gap:.7rem; padding:.42rem 0;
+  border-bottom:1px solid var(--line); font-size:.9rem; align-items:baseline}
+ol.steps li:last-child{border-bottom:0}
+ol.steps li::before{content:counter(s,decimal-leading-zero);
+  font-family:var(--f-data); font-size:10px; color:var(--faint); flex:0 0 1.5rem}
+.myth-real ol.steps li{font-size:.855rem}
+.tag{font-family:var(--f-data); font-size:10px; padding:.1rem .34rem; border-radius:2px;
+  background:var(--panel-2); color:var(--muted); margin-left:auto; white-space:nowrap}
+.kicker{margin-top:1.4rem; padding:1rem 1.15rem; border:1px solid var(--line);
+  border-radius:3px; background:var(--panel-2); max-width:78ch}
+.kicker b{color:var(--ink)}
+
+/* ── árbol de flujo (vista 2) ── */
+.flow{position:relative; width:1120px; min-width:1120px; height:500px;
+  margin:1.1rem 0 .6rem}
+.flow svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;
+  overflow:visible}
+.pstage{
+  position:absolute; appearance:none; cursor:pointer; text-align:left;
+  background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--st);
+  border-radius:2px; padding:.4rem .55rem; color:var(--ink);
+  display:flex; flex-direction:column; gap:.18rem; justify-content:center;
+  transition:background .15s, box-shadow .15s;
+}
+.pstage:hover{background:var(--panel-2)}
+.pstage[aria-pressed="true"]{background:var(--panel-2);
+  box-shadow:0 0 0 2px var(--st), var(--shadow)}
+.pstage[aria-pressed="true"] .pn{color:var(--st)}
+.pn{font-family:var(--f-data); font-size:9.5px; color:var(--faint)}
+.pl{font:600 11.5px/1.14 var(--f-disp); letter-spacing:.055em; text-transform:uppercase;
+  padding-right:2.4rem}
+.pm{font-family:var(--f-data); font-size:9.5px; color:var(--muted)}
+/* sustrato: dónde se EJECUTA la etapa (distinto de qué la limita) */
+.sb{position:absolute; right:5px; top:5px; font-family:var(--f-data); font-size:8px;
+  letter-spacing:.05em; padding:.06rem .26rem; border-radius:2px; line-height:1.35;
+  border:1px solid var(--sc); color:var(--sc)}
+.sb.fill{background:var(--sc); color:var(--panel); border-color:var(--sc)}
+.subs{display:flex; flex-wrap:wrap; gap:.4rem .9rem; margin:.35rem 0 0;
+  align-items:baseline}
+.subs .sd{display:flex; gap:.4rem; align-items:baseline; font-size:11.5px;
+  color:var(--muted)}
+.subs .sd i{font-family:var(--f-data); font-size:8px; font-style:normal;
+  letter-spacing:.05em; padding:.06rem .26rem; border-radius:2px;
+  border:1px solid currentColor}
+.subs .tally{font-family:var(--f-data); font-size:11px; color:var(--t3);
+  border-left:1px solid var(--line); padding-left:.9rem}
+/* rótulos y decoración del diagrama */
+.flow .band{position:absolute; font:600 9.5px/1 var(--f-disp); letter-spacing:.15em;
+  text-transform:uppercase; color:var(--faint); white-space:nowrap}
+/* abajo a la izquierda: el único hueco que no cruza ningún cable, y además
+   funciona como conclusión del diagrama */
+.flow .mult{position:absolute; left:204px; top:362px; width:372px;
+  border:1px solid var(--line); border-radius:3px; background:var(--panel-2);
+  padding:.5rem .65rem; display:grid; gap:.1rem .7rem;
+  grid-template-columns:auto 1fr; align-items:center}
+.flow .mult .eyebrow{grid-column:1/-1}
+.flow .mult b{font:600 13px/1.1 var(--f-disp); letter-spacing:.05em; text-transform:uppercase}
+.flow .mult s{font-family:var(--f-data); font-size:9px; color:var(--muted);
+  text-decoration:none; line-height:1.3}
+.flow .mult u{grid-column:1/-1; font-family:var(--f-data); font-size:10.5px; color:var(--t3);
+  text-decoration:none; border-top:1px solid var(--line); padding-top:.3rem;
+  margin-top:.15rem; line-height:1.25}
+.wl{font-family:var(--f-data); font-size:9.5px; fill:var(--muted)}
+.wl.k{font:600 10px var(--f-disp); letter-spacing:.1em; text-transform:uppercase}
+.loops{display:flex; flex-wrap:wrap; gap:.5rem .9rem; margin:.2rem 0 0}
+.loops .lp{display:flex; gap:.45rem; align-items:baseline; font-size:11.5px;
+  color:var(--muted)}
+.loops .lp b{font-family:var(--f-data); font-size:10px; padding:.06rem .32rem;
+  border-radius:2px; color:var(--ground)}
+.loops .lp span{color:var(--ink-dim)}
+
+.detail{margin-top:1rem; display:grid; gap:1rem; grid-template-columns:1.35fr 1fr;
+  align-items:start}
+@media(max-width:820px){.detail{grid-template-columns:1fr}}
+.detail h3{font:600 clamp(1.05rem,2.2vw,1.3rem)/1.15 var(--f-disp);
+  text-transform:uppercase; letter-spacing:.02em}
+.detail .role{font-family:var(--f-data); font-size:11px; color:var(--accent); margin-top:.3rem}
+.detail p.d{margin-top:.8rem; font-size:1rem; line-height:1.6; color:var(--ink-dim);
+  max-width:58ch}
+.costs{display:grid; gap:.7rem}
+.cost{border-left:3px solid var(--indigo); padding:.1rem 0 .1rem .75rem}
+.cost.lat{border-left-color:var(--t3)}
+.cost p{margin-top:.3rem; font-size:.92rem; color:var(--ink-dim); max-width:46ch}
+
+/* ── simulador ── */
+.sim{display:grid; gap:1rem; grid-template-columns:300px 1fr; margin-top:1.2rem}
+@media(max-width:900px){.sim{grid-template-columns:1fr}}
+.ctrl{display:flex; flex-direction:column; gap:1rem}
+.field label{display:flex; justify-content:space-between; align-items:baseline; gap:.6rem;
+  font:600 10.5px/1 var(--f-disp); letter-spacing:.11em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:.4rem}
+.field label b{font-family:var(--f-data); font-size:12px; color:var(--ink);
+  letter-spacing:0; text-transform:none; font-weight:500}
+input[type=range]{width:100%; accent-color:var(--accent); margin:0}
+select{width:100%; background:var(--panel-2); color:var(--ink); border:1px solid var(--line);
+  border-radius:2px; padding:.42rem .5rem; font:500 12.5px var(--f-body)}
+.out{display:grid; gap:.9rem}
+.kpis{display:grid; gap:.6rem; grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
+.kpi{background:var(--panel); border:1px solid var(--line); border-radius:3px;
+  padding:.6rem .7rem; border-left:3px solid var(--kc,var(--line))}
+.kpi .k{font:600 9.5px/1 var(--f-disp); letter-spacing:.12em; text-transform:uppercase;
+  color:var(--faint)}
+.kpi .v{font-family:var(--f-data); font-size:1.28rem; margin-top:.28rem;
+  font-variant-numeric:tabular-nums; line-height:1.05}
+.kpi .u{font-family:var(--f-data); font-size:10px; color:var(--muted)}
+.bars{display:grid; gap:.5rem}
+.bar-row{display:grid; grid-template-columns:9.5rem 1fr 5.2rem; gap:.6rem;
+  align-items:center; font-size:.8rem}
+.bar-row .bl{color:var(--muted)}
+.track{height:14px; background:var(--panel-2); border-radius:2px; overflow:hidden;
+  display:flex; border:1px solid var(--line)}
+.seg{height:100%}
+.bar-row .bv{font-family:var(--f-data); font-size:.79rem; text-align:right;
+  font-variant-numeric:tabular-nums}
+canvas{display:block; width:100%; height:auto; border:1px solid var(--line);
+  border-radius:3px; background:var(--panel)}
+.verdict{padding:.85rem 1rem; border-radius:3px; border:1px solid var(--line);
+  background:var(--panel-2); font-size:.9rem}
+.verdict b{font-family:var(--f-disp); letter-spacing:.06em; text-transform:uppercase;
+  font-size:12px}
+.st-ok{border-left:3px solid var(--ok)} .st-warn{border-left:3px solid var(--warn)}
+.st-crit{border-left:3px solid var(--crit)}
+
+/* ── tablas ── */
+table{border-collapse:collapse; width:100%; font-size:.85rem; min-width:520px}
+th,td{text-align:left; padding:.5rem .6rem; border-bottom:1px solid var(--line);
+  vertical-align:top}
+th{font:600 10px/1.3 var(--f-disp); letter-spacing:.12em; text-transform:uppercase;
+  color:var(--faint)}
+td.n{font-family:var(--f-data); text-align:right; font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+caption{caption-side:bottom; text-align:left; padding-top:.6rem; font-size:.76rem;
+  color:var(--faint)}
+
+/* ── cadena de arranque ── */
+.chain{display:grid; gap:0; margin-top:1rem}
+.link{display:grid; grid-template-columns:2.2rem 1fr auto; gap:.8rem; align-items:center;
+  padding:.62rem .7rem; border:1px solid var(--line); border-top-width:0;
+  background:var(--panel)}
+.link:first-child{border-top-width:1px}
+.link .li{font-family:var(--f-data); font-size:10px; color:var(--faint)}
+.link .ln{font-size:.87rem}
+.link .ln s{display:block; font-size:.76rem; color:var(--muted); text-decoration:none}
+.link .lt{font-family:var(--f-data); font-size:.82rem; font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+.link .lbar{grid-column:2/4; height:5px; background:var(--panel-2); border-radius:2px;
+  overflow:hidden}
+.link .lbar i{display:block; height:100%; background:var(--lc,var(--t2))}
+
+/* ── notas / fuentes ── */
+.note{font-size:.8rem; color:var(--muted); max-width:80ch; margin-top:.7rem}
+.note code{font-family:var(--f-data); font-size:.76rem; background:var(--panel-2);
+  padding:.05rem .28rem; border-radius:2px}
+footer{border-top:1px solid var(--line); background:var(--panel); margin-top:2rem;
+  padding:1.8rem 0 2.6rem}
+footer h4{font:600 11px/1 var(--f-disp); letter-spacing:.14em; text-transform:uppercase;
+  color:var(--faint); margin-bottom:.7rem}
+.srcs{columns:2 240px; column-gap:2rem; font-size:.78rem; color:var(--muted)}
+.srcs p{margin:0 0 .42rem; break-inside:avoid}
+.badge{font-family:var(--f-data); font-size:9px; padding:.06rem .3rem; border-radius:2px;
+  border:1px solid var(--line); color:var(--faint); margin-right:.34rem}
+.b-m{color:var(--ok); border-color:var(--ok)}
+.b-v{color:var(--warn); border-color:var(--warn)}
+.b-e{color:var(--muted)}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important; animation:none !important; scroll-behavior:auto !important}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div>
+      <div class="eyebrow">Módulo 5 · Clase 1 — Modelos open source</div>
+      <h1>Servir un LLM <em>a escala</em></h1>
+      <p class="sub">Todo lo que esconde la frase «lo corremos nosotros»: qué pasa de verdad
+      entre que alguien escribe algo y recibe una respuesta, qué máquina hace falta para eso, y
+      por qué la espera es el problema difícil.</p>
+    </div>
+    <div class="meta">
+      Instrumento interactivo<br>
+      <span class="num">↹</span> teclas 1–5 para cambiar de vista
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Vistas">
+  <div class="wrap tabs-in" role="tablist">
+    <button class="tab" role="tab" aria-selected="true"  data-v="mito"><i>01</i>El mito</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="ciclo"><i>02</i>Ciclo de una solicitud</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="sim"><i>03</i>Simulador de carga</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="fierro"><i>04</i>Consideraciones al TTFT</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="rompe"><i>05</i>Modos de falla</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ══════════════════ 01 ══════════════════ -->
+<section class="view on" id="v-mito" role="tabpanel">
+  <h2 class="vt">Dos cosas distintas con el mismo nombre</h2>
+  <p class="lede">En la lección 1 corrimos un modelo en un laptop con tres palabras. Funciona, y
+  ahí está la trampa: <strong>la demo y el servicio se llaman igual y no se parecen en nada</strong>.
+  A la izquierda, lo que hiciste en clase. A la derecha, lo que una organización se compromete a
+  operar cuando dice que va a hospedarlo.</p>
+
+  <div class="myth">
+    <div class="myth-col myth-naive card">
+      <h4>Correrlo · una GPU, una persona</h4>
+      <ol class="steps">
+        <li>Descargar el modelo</li>
+        <li>Cargarlo en la GPU</li>
+        <li>Escribir y esperar la respuesta</li>
+      </ol>
+      <p class="note">Una sola persona, nadie más en la fila, ninguna hora de entrega
+      comprometida. Si tarda, tarda.</p>
+    </div>
+    <div class="myth-col myth-real card">
+      <h4>Servirlo · varios servidores, miles de personas</h4>
+      <ol class="steps">
+        <li>Convertir el texto en números</li>
+        <li>Elegir qué servidor atiende</li>
+        <li>Decidir a quién se le dice que no</li>
+        <li>Poner la solicitud en fila</li>
+        <li>Apartar memoria para la conversación</li>
+        <li>Leer todo lo que se mandó</li>
+        <li>Mover esa memoria entre servidores</li>
+        <li>Escribir la respuesta palabra por palabra</li>
+        <li>Atender a decenas de personas a la vez</li>
+        <li>Ejecutar herramientas y volver a empezar</li>
+        <li>Guardar la conversación mientras la persona piensa</li>
+        <li>Entregar el texto a medida que aparece</li>
+        <li>Medir cuánto esperó cada uno</li>
+        <li>Seguir funcionando cuando se muere una GPU</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kicker">
+    <b>Por qué importa.</b> El cálculo de cuándo conviene hospedar un modelo propio supone que
+    el servidor «sirve». Esa palabra esconde la columna de la derecha: cada línea tiene su forma
+    de fallar y alguien a cargo. Ese alguien no aparece en ninguna tarifa por token.
+  </div>
+</section>
+
+<!-- ══════════════════ 02 ══════════════════ -->
+<section class="view" id="v-ciclo" role="tabpanel">
+  <h2 class="vt">Ciclo de vida de una solicitud</h2>
+  <p class="lede">Haz clic en cualquier etapa para ver qué hace, qué exige de la máquina y qué
+  le suma a la espera. La GPU —lo único que se arrienda por hora— <strong>solo calcula en tres
+  de estas doce etapas, y se paga en las doce</strong>.</p>
+
+  <div class="subs" id="subs"></div>
+  <div class="loops" id="loops"></div>
+  <div class="scroll-x">
+    <div class="flow" id="flow">
+      <svg id="wires" viewBox="0 0 1120 500" aria-hidden="true"></svg>
+      <div class="mult">
+        <span class="eyebrow">Por qué importan los bucles</span>
+        <b>Un mensaje no es<br>una pasada</b>
+        <s>Los tres bucles se<br>multiplican entre sí</s>
+        <u>Cada cosa que alguien escribe cuesta miles de pasadas completas por el modelo</u>
+      </div>
+    </div>
+  </div>
+  <div class="detail card" id="detail"></div>
+</section>
+
+<!-- ══════════════════ 03 ══════════════════ -->
+<section class="view" id="v-sim" role="tabpanel">
+  <h2 class="vt">Simulador de carga</h2>
+  <p class="lede">Mueve los controles y observa dónde se cae el sistema. El objetivo no es
+  predecir tu factura: es <strong>sentir que la VRAM, la concurrencia y la latencia son el mismo
+  problema visto desde tres lados</strong>. Modelo simplificado (roofline + cola M/M/1), con las
+  fórmulas a la vista abajo.</p>
+
+  <div class="sim">
+    <div class="ctrl">
+      <div class="field">
+        <label for="f-model">Modelo</label>
+        <select id="f-model"></select>
+      </div>
+      <div class="field">
+        <label for="f-gpu">GPU</label>
+        <select id="f-gpu"></select>
+      </div>
+      <div class="field">
+        <label for="f-n">GPUs por réplica <b id="o-n"></b></label>
+        <input type="range" id="f-n" min="1" max="64" step="1" value="8">
+      </div>
+      <div class="field">
+        <label for="f-ctx">Contexto medio <b id="o-ctx"></b></label>
+        <input type="range" id="f-ctx" min="1" max="20" step="1" value="9">
+      </div>
+      <div class="field">
+        <label for="f-out">Tokens de salida <b id="o-out"></b></label>
+        <input type="range" id="f-out" min="1" max="16" step="1" value="4">
+      </div>
+      <div class="field">
+        <label for="f-rps">Carga objetivo <b id="o-rps"></b></label>
+        <input type="range" id="f-rps" min="1" max="130" step="1" value="55">
+      </div>
+      <div class="field">
+        <label for="f-cache">Aciertos de caché de prefijo <b id="o-cache"></b></label>
+        <input type="range" id="f-cache" min="0" max="99" step="1" value="0">
+      </div>
+    </div>
+
+    <div class="out">
+      <div class="kpis" id="kpis"></div>
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:.7rem">Reparto de VRAM por réplica</div>
+        <div class="bars" id="vram"></div>
+      </div>
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:.7rem">TTFT vs. tasa de llegadas — el codo de la cola</div>
+        <canvas id="cv" width="900" height="260" role="img"
+          aria-label="Curva de tiempo hasta el primer token en función de la tasa de llegadas"></canvas>
+        <p class="note">La línea vertical es tu punto de operación; la horizontal, un SLO de
+        TTFT de 2 s. La curva no sube: se dispara. Un sistema al 85% de utilización ya espera
+        ~5,7× su tiempo de servicio en la cola.</p>
+      </div>
+      <div id="verdict"></div>
+    </div>
+  </div>
+
+  <h3 class="st">Las dos ideas que mueven todo</h3>
+  <div class="grid g2">
+    <div class="card">
+      <div class="eyebrow">La memoria manda</div>
+      <p class="note" style="margin-top:.5rem">Cada conversación viva ocupa memoria de GPU, y
+      esa memoria crece con lo que se lleva conversado. Es lo que fija cuánta gente cabe al
+      mismo tiempo. Algunos modelos guardan ese apunte de forma mucho más compacta que otros
+      —a veces órdenes de magnitud— y eso pesa más que su tamaño total.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Escribir es releer</div>
+      <p class="note" style="margin-top:.5rem">Para cada palabra, la GPU repasa el modelo
+      entero y las conversaciones que tiene abiertas. Con conversaciones largas, releer las
+      conversaciones cuesta más que releer el modelo: ahí el cuello de botella deja de ser el
+      modelo y pasa a ser la memoria. La barra de arriba muestra ese cruce.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 04 ══════════════════ -->
+<section class="view" id="v-fierro" role="tabpanel">
+  <h2 class="vt">Consideraciones al TTFT: arranque, reparto e interconexión</h2>
+  <p class="lede">El TTFT es lo que tarda en aparecer <strong>la primera palabra</strong> de la
+  respuesta. No lo decide solo el modelo: lo deciden tres cosas físicas que ninguna tarifa por
+  token menciona — <strong>cuánto tarda en encenderse un servidor</strong>, <strong>cómo está
+  repartido el modelo</strong> entre GPUs, y <strong>qué tan rápido se hablan esas GPUs</strong>
+  entre sí.</p>
+
+  <h3 class="st">01 · Prender un servidor no es instantáneo</h3>
+  <div class="chain" id="chain"></div>
+  <p class="note">Un servicio web común arranca en segundos. Un servidor de modelo arranca en
+  minutos, porque antes hay que traer el modelo por la red, leerlo del disco y subirlo a la
+  GPU. Durante esos minutos <b>no atiende a nadie y ya se está pagando</b>. Por eso «que
+  crezca solo cuando haya demanda» termina siendo, en la práctica, <b>tener máquinas
+  encendidas esperando</b>.</p>
+
+  <h3 class="st">02 · Un modelo grande no cabe en una GPU</h3>
+  <div class="grid g2" id="par"></div>
+
+  <h3 class="st">03 · Dentro de la máquina es rápido; entre máquinas, no</h3>
+  <div class="card">
+    <div class="eyebrow">Mover la memoria de una conversación</div>
+    <div class="bars" style="margin-top:.8rem" id="icbars"></div>
+    <p class="note" style="margin-top:.9rem">Cuando el modelo se reparte entre varias GPUs,
+    esas GPUs se hablan todo el tiempo. Si están dentro de la misma máquina, se hablan por un
+    cable interno muy rápido. Si están en máquinas distintas, por la red: <b>un orden de
+    magnitud más lento</b>. Esa diferencia decide cómo se puede repartir un modelo — y es la
+    razón por la que un servidor de inferencia se compra de a máquinas completas, no de a
+    tarjetas.</p>
+  </div>
+</section>
+
+<!-- ══════════════════ 05 ══════════════════ -->
+<section class="view" id="v-rompe" role="tabpanel">
+  <h2 class="vt">Modos de falla</h2>
+  <p class="lede">Un prototipo falla y se reinicia. Un servicio falla y alguien pierde algo.
+  Estas cosas <strong>solo aparecen</strong> cuando hay mucha gente a la vez, respaldo que
+  sostener y agentes trabajando de verdad.</p>
+
+  <div class="grid g2" id="fails" style="margin-top:1.2rem"></div>
+
+  <h3 class="st">Y los agentes no se parecen a un chat</h3>
+  <div class="grid g2" id="ag"></div>
+  <div class="kicker" style="margin-top:1.3rem">
+    <b>Lo que hay que llevarse.</b> Un agente manda muchísimo texto de entrada, así que parece
+    un problema de capacidad de cálculo. No lo es: casi toda esa entrada ya estaba guardada de
+    la vuelta anterior, y el tiempo se va en escribir. El cuello de botella real es
+    <b>la memoria</b> — mantener conversaciones enormes vivas mientras alguien piensa.
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <h4>De dónde sale esto</h4>
+    <div class="srcs">
+      <p><span class="badge b-m">medido</span>El comportamiento descrito viene de mediciones
+      publicadas en producción y de trabajos revisados: la divulgación de 24 horas de
+      <b>DeepSeek</b> sobre su propio sistema de inferencia, las trazas reales de agentes de
+      código de <b>TraceLab</b> (UW), y los trabajos <b>Mooncake</b> (Moonshot AI),
+      <b>DistServe</b> y <b>Splitwise</b>.</p>
+      <p><span class="badge b-e">estimado</span>El simulador y los tiempos de arranque son
+      <b>modelos de orden de magnitud</b>, no mediciones: sirven para entender cómo se mueven
+      las cosas entre sí, no para dimensionar una compra.</p>
+      <p><span class="badge b-v">ojo</span>Cuidado con los «tantas veces más rápido» sin decir
+      con qué compromiso de espera: casi siempre miden cuánto trabajo pasa, no cuánta gente
+      quedó atendida en tiempo. Son cosas distintas.</p>
+      <p style="color:var(--faint)">Documento autocontenido: funciona sin conexión, con las
+      tipografías del sistema.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+"use strict";
+/* ───────── utilidades ───────── */
+const $=(s,c)=>(c||document).querySelector(s), $$=(s,c)=>[...(c||document).querySelectorAll(s)];
+const RAMP=["--t0","--t1","--t2","--t3","--t4"];
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt=(x,d=0)=>x.toLocaleString("es-CL",{minimumFractionDigits:d,maximumFractionDigits:d});
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+function bytes(b){
+  if(b>=1099511627776) return fmt(b/1099511627776,2)+" TiB";
+  if(b>=1073741824) return fmt(b/1073741824,b>=10737418240?0:1)+" GiB";
+  if(b>=1048576) return fmt(b/1048576,0)+" MiB";
+  if(b>=1024) return fmt(b/1024,0)+" KiB";
+  return fmt(b)+" B";
+}
+function dur(s){
+  if(s<0.001) return fmt(s*1e6,0)+" µs";
+  if(s<1) return fmt(s*1000,s<0.01?1:0)+" ms";
+  if(s<60) return fmt(s,s<10?2:1)+" s";
+  return fmt(s/60,1)+" min";
+}
+
+/* ───────── vistas ───────── */
+const tabs=$$(".tab");
+function show(v){
+  tabs.forEach(t=>t.setAttribute("aria-selected",String(t.dataset.v===v)));
+  $$(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
+  // ojo: requestAnimationFrame pasa un timestamp; draw() lo tomaría como su
+  // argumento `r` y leería r.rho === undefined. Hay que envolverlo.
+  if(v==="sim") requestAnimationFrame(()=>draw());
+}
+tabs.forEach(t=>t.addEventListener("click",()=>show(t.dataset.v)));
+addEventListener("keydown",e=>{
+  if(e.target.matches("input,select,textarea")) return;
+  const i=parseInt(e.key,10);
+  if(i>=1&&i<=tabs.length) show(tabs[i-1].dataset.v);
+});
+
+/* ═════════ 02 · etapas ═════════ */
+/* Cada etapa responde tres preguntas y nada más: qué pasa, qué exige de la
+   infraestructura y qué le hace a la espera del usuario. Sin cifras: el detalle
+   numérico vive en el simulador, no en la explicación. */
+const STAGES=[
+{n:"Tokenizar",m:"texto → números",role:"El modelo nunca ve letras",
+ q:"El texto se parte en pedazos y cada pedazo se cambia por un número. Todo lo que viene después se mide en esas unidades, no en palabras.",
+ inf:"Nada: ocurre en la CPU del servidor.",
+ lat:"Imperceptible."},
+{n:"Enrutar",m:"elegir servidor",role:"A quién le toca",
+ q:"Se decide qué servidor atiende. Si esta conversación ya pasó por uno, conviene mandarla ahí: ese servidor todavía la recuerda.",
+ inf:"Una pieza más que operar, y que debe llevar la cuenta de dónde estuvo cada conversación.",
+ lat:"Elegir mal obliga a releer la conversación completa desde el principio."},
+{n:"Admitir",m:"aceptar o no",role:"Decir que no a tiempo",
+ q:"Si el sistema está lleno, hay que decidir a quién se le niega el paso. Decirlo tarde es peor: se gastó trabajo en alguien que igual se fue.",
+ inf:"Reglas de prioridad y una forma de rechazar sin que se caiga el resto.",
+ lat:"Sin este freno la espera no empeora de a poco: se desploma."},
+{n:"Encolar",m:"esperar turno",role:"La espera invisible",
+ q:"La solicitud espera hasta que haya lugar. Nadie ve esta etapa y suele ser la que más tiempo aporta.",
+ inf:"Define cuánta capacidad de reserva hay que pagar para que la fila no crezca.",
+ lat:"Mientras sobra lugar no se nota; al acercarse al límite se dispara de golpe."},
+{n:"Reservar memoria",m:"apartar espacio",role:"Guardar la conversación",
+ q:"Se aparta espacio en la GPU para recordar todo lo dicho hasta ahora. Ese apunte crece con cada palabra de la conversación.",
+ inf:"Consume la memoria de la GPU, que es el recurso escaso. Mientras más larga la conversación, menos gente cabe a la vez.",
+ lat:"Si no queda espacio hay que desalojar a alguien, y al volver su conversación se relee entera."},
+{n:"Leer la pregunta",m:"de una sola vez",role:"Prefill",
+ q:"El modelo lee de una vez todo lo que se le mandó: la pregunta, las instrucciones y la conversación previa.",
+ inf:"Pura capacidad de cálculo. Una sola solicitud larga ya ocupa la GPU completa, así que juntar varias no ayuda.",
+ lat:"Es lo que se tarda en aparecer la primera palabra. Texto de entrada largo, espera larga."},
+{n:"Mover la memoria",m:"entre servidores",role:"Traspaso",
+ q:"Cuando quien lee la pregunta y quien escribe la respuesta son máquinas distintas, el apunte de la conversación tiene que viajar.",
+ inf:"Exige red interna de alta velocidad. Dentro de una misma máquina es casi gratis; entre máquinas, cara y lenta.",
+ lat:"Se disimula haciéndolo mientras se calcula. Si no se disimula, se nota."},
+{n:"Escribir",m:"palabra por palabra",role:"Decode",
+ q:"La respuesta se genera de a una palabra. Para cada una, el modelo vuelve a repasar todo: sus propios parámetros y la conversación completa.",
+ inf:"Lo limita la velocidad de la memoria, no la potencia de cálculo. Por eso una GPU más nueva rinde menos de lo que promete.",
+ lat:"Marca el ritmo al que aparece el texto, y es casi todo el tiempo de la respuesta."},
+{n:"Atender a varios",m:"a la vez",role:"Batching continuo",
+ q:"La GPU no atiende a una persona: atiende a muchas juntas y rearma el grupo con cada palabra que escribe.",
+ inf:"Es lo que vuelve rentable el servidor. Sin esto haría falta una GPU por usuario.",
+ lat:"Tu espera pasa a depender de los demás: alguien con un texto enorme frena a todo el grupo."},
+{n:"Usar herramientas",m:"salir y volver",role:"El bucle del agente",
+ q:"El modelo pide ejecutar algo —buscar un dato, consultar un sistema, correr código— y el resultado vuelve como una pregunta nueva. Casi todas las vueltas de un agente son esto, no alguien escribiendo.",
+ inf:"La GPU queda reservada esperando algo que no controla y que puede tardar.",
+ lat:"Cada vuelta suma lo que tarde la herramienta más una lectura completa de la conversación otra vez."},
+{n:"Entregar",m:"mientras se genera",role:"Streaming",
+ q:"El texto se va devolviendo a medida que se escribe, para que se vea aparecer en vez de llegar de golpe.",
+ inf:"Nada relevante.",
+ lat:"Importa la regularidad más que la velocidad: un texto a tirones molesta más que uno parejo y algo más lento."},
+{n:"Sostener el contexto",m:"esperar a la persona",role:"Entre turnos",
+ q:"Terminada la respuesta, la persona lee y piensa. Su conversación sigue guardada esperando. Esa pausa humana es casi todo el tiempo de una sesión.",
+ inf:"Memoria de GPU ocupada sin producir nada. La alternativa —soltarla— obliga a releer todo cuando la persona vuelve.",
+ lat:"No afecta a esta respuesta: decide cuánto tarda la siguiente."}
+];
+/* Geometría del árbol de flujo, en el espacio de diseño 1180×450 del viewBox.
+   [x, y, ancho] por etapa; alto fijo 58. */
+const POS=[
+  [16,16,186],[16,88,186],[16,160,186],[16,232,186],[16,304,186],   // admisión
+  [270,100,180],[474,100,170],[668,100,170],[668,210,170],          // motor
+  [850,262,180],[830,372,180],[600,372,180]                          // herramientas y salida
+];
+const NH=58;
+const DMD={x:912,y:129,r:34};      // rombo de decisión
+/* Sustrato de ejecución por etapa. Es una pregunta DISTINTA de «qué la limita»:
+   dice en qué pieza de hardware ocurre, y separa la GPU calculando (SMs activos)
+   de la GPU solo ocupada (VRAM comprometida, SMs ociosos). Ahí está el argumento
+   de utilización que sostiene todo el modelo de costos. */
+const SUBS={
+  gpu :{t:"GPU",  c:"--t3",     fill:1, l:"la GPU calcula"},
+  vram:{t:"VRAM", c:"--indigo", fill:0, l:"la GPU está ocupada sin calcular"},
+  /* --muted y no --faint: a 8px, --faint daba 2,99 de contraste sobre el panel */
+  cpu :{t:"CPU",  c:"--muted",  fill:0, l:"no toca la GPU"},
+  /* --accent y no --t1: el verde daba 3,48 sobre fondo claro (4,85 / 7,94 con accent) */
+  net :{t:"RED",  c:"--accent", fill:0, l:"red entre servidores"},
+  ext :{t:"EXT",  c:"--t4",     fill:0, l:"la GPU espera algo de afuera"}
+};
+/* índice paralelo a STAGES */
+const SUB_OF=["cpu","cpu","cpu","cpu","vram","gpu","net","gpu","gpu","ext","cpu","vram"];
+
+const LOOPS=[
+  ["L1","--t2","Escribir","una vuelta por cada palabra de la respuesta"],
+  ["L2","--t4","Herramientas","el resultado vuelve como pregunta nueva"],
+  ["L3","--t0","Conversación","la persona responde y todo empieza de nuevo"]
+];
+
+(function(){
+  $("#loops").innerHTML=LOOPS.map(([k,c,n,d])=>
+    `<span class="lp"><b style="background:var(${c})">${k}</b>
+      <span>${esc(n)}</span> ${esc(d)}</span>`).join("");
+
+  // leyenda de sustrato + recuento (responde: ¿dónde está la GPU?)
+  const nGpu=SUB_OF.filter(k=>k==="gpu").length;
+  const nMem=SUB_OF.filter(k=>k==="gpu"||k==="vram").length;
+  /* el relleno lleva estilos en línea: con background:currentColor el texto
+     quedaba del mismo color que el fondo, es decir invisible */
+  $("#subs").innerHTML=Object.values(SUBS).map(s=>
+    `<span class="sd" style="color:var(${s.c})"><i ${s.fill
+       ?`style="background:var(${s.c});color:var(--panel);border-color:var(${s.c})"`:""
+     }>${s.t}</i>
+      <span style="color:var(--muted)">${esc(s.l)}</span></span>`).join("")
+   +`<span class="tally">solo calcula en ${nGpu} de ${SUB_OF.length} etapas ·
+      se paga en las ${SUB_OF.length}</span>`;
+
+  // nodos
+  $("#flow").insertAdjacentHTML("beforeend", STAGES.map((s,i)=>{
+    const [x,y,w]=POS[i], sb=SUBS[SUB_OF[i]];
+    return `<button class="pstage" aria-pressed="${i===0}" data-i="${i}"
+      style="--st:var(${sb.c});--sc:var(${sb.c});left:${x}px;top:${y}px;width:${w}px;height:${NH}px">
+      <span class="pn">${String(i+1).padStart(2,"0")}</span>
+      <span class="pl">${esc(s.n)}</span>
+      <span class="pm">${esc(s.m)}</span>
+      <span class="sb ${sb.fill?"fill":""}">${sb.t}</span></button>`;}).join("")
+   +`<span class="band" style="left:16px;top:0;transform:translateY(-14px)">Admisión</span>
+     <span class="band" style="left:270px;top:100px;transform:translateY(-14px)">Motor de inferencia</span>
+     <span class="band" style="left:600px;top:372px;transform:translateY(-14px)">Salida y espera</span>`);
+
+  // cables
+  const mk=(id,c)=>`<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5"
+     markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+     <path d="M0,0 L10,5 L0,10 z" fill="var(${c})"/></marker>`;
+  const E=[]; // [path, color, marker, dash]
+  const put=(d,c="--line",m="a",dash=0)=>E.push([d,c,m,dash]);
+  // admisión en cascada
+  for(let i=0;i<4;i++){ const [x,y,w]=POS[i]; put(`M${x+w/2},${y+NH} L${x+w/2},${POS[i+1][1]}`); }
+  // 05 → 06 prefill
+  put(`M202,333 C244,333 248,129 266,129`);
+  // 06 → 07 → 08
+  put(`M450,129 L470,129`); put(`M644,129 L664,129`);
+  // L1: decode ⇄ batch continuo
+  put(`M770,158 L770,206`,"--t2","l1"); put(`M736,206 L736,162`,"--t2","l1");
+  // 08 → rombo
+  put(`M838,129 L874,129`);
+  // rombo → tool calling (rama "tool call")
+  put(`M912,163 L912,258`,"--t4","l2");
+  // rombo → emitir (rama "texto / EOS")
+  put(`M950,129 L1062,129 L1062,401 L1014,401`);
+  // L2: tool calling → vuelve a prefill
+  put(`M888,320 L888,338 L360,338 L360,162`,"--t4","l2");
+  // emitir → sostener contexto
+  put(`M830,401 L784,401`);
+  // L3: sostener contexto → nuevo turno → tokenizar
+  put(`M690,430 L690,482 L8,482 L8,45 L12,45`,"--t0","l3",1);
+
+  $("#wires").innerHTML=
+   `<defs>${mk("a","--faint")}${mk("l1","--t2")}${mk("l2","--t4")}${mk("l3","--t0")}</defs>`
+   +E.map(([d,c,m,dash])=>`<path d="${d}" fill="none" stroke="var(${c})"
+      stroke-width="${m==="a"?1.4:1.8}" ${dash?'stroke-dasharray="5 4"':""}
+      marker-end="url(#${m})"/>`).join("")
+   // rombo de decisión
+   +`<path d="M${DMD.x},${DMD.y-DMD.r} L${DMD.x+DMD.r},${DMD.y}
+       L${DMD.x},${DMD.y+DMD.r} L${DMD.x-DMD.r},${DMD.y} z"
+       fill="var(--panel-2)" stroke="var(--line)"/>
+     <text class="wl" x="${DMD.x}" y="86" text-anchor="middle">¿pidió una herramienta?</text>`
+   // rótulos de los cables
+   +`<text class="wl k" x="922" y="205" fill="var(--t4)">sí</text>
+     <text class="wl" x="1056" y="150" text-anchor="end">no · ya terminó</text>
+     <text class="wl k" x="656" y="186" text-anchor="end" fill="var(--t2)">L1 ·</text>
+     <text class="wl" x="656" y="199" text-anchor="end">una vuelta por palabra</text>
+     <text class="wl k" x="596" y="332" text-anchor="end" fill="var(--t4)">L2 ·</text>
+     <text class="wl" x="600" y="332">el resultado vuelve como pregunta</text>
+     <text class="wl k" x="300" y="477" fill="var(--t0)">L3 ·</text>
+     <text class="wl" x="330" y="477">la persona responde</text>`;
+  function sel(i){
+    $$(".pstage").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.i===i)));
+    const s=STAGES[i];
+    $("#detail").innerHTML=
+     `<div><h3>${esc(s.n)}</h3>
+        <div class="role">${esc(s.role)}
+          <span style="color:var(${SUBS[SUB_OF[i]].c})"> · ${esc(SUBS[SUB_OF[i]].l)}</span></div>
+        <p class="d">${esc(s.q)}</p></div>
+      <div class="costs">
+        <div class="cost"><span class="eyebrow">Qué cuesta en infraestructura</span>
+          <p>${esc(s.inf)}</p></div>
+        <div class="cost lat"><span class="eyebrow">Qué cuesta en espera</span>
+          <p>${esc(s.lat)}</p></div></div>`;
+  }
+  $("#flow").addEventListener("click",e=>{
+    const b=e.target.closest(".pstage"); if(b) sel(+b.dataset.i);
+  });
+  sel(0);
+})();
+</script>
+<script>
+"use strict";
+/* ═════════ 03 · simulador ═════════ */
+const MODELS=[
+ {id:"l70",n:"Llama-3 70B · GQA · bf16",P:70e9,A:70e9,bpp:2,L:80,kvh:8,hd:128,mla:0},
+ {id:"l70q",n:"Llama-3 70B · GQA · int4",P:70e9,A:70e9,bpp:0.6,L:80,kvh:8,hd:128,mla:0},
+ {id:"l8",n:"Llama-3 8B · GQA · bf16",P:8e9,A:8e9,bpp:2,L:32,kvh:8,hd:128,mla:0},
+ {id:"dsv3",n:"MoE 671B (37B activos) · MLA · fp8",P:671e9,A:37e9,bpp:1,L:61,mla:576},
+ {id:"opt66",n:"OPT-66B · MHA · bf16",P:66e9,A:66e9,bpp:2,L:64,kvh:72,hd:128,mla:0}
+];
+const GPUS=[
+ {id:"h200",n:"H200 · 141 GB · 4,8 TB/s",vram:141e9,bw:4.8e12,fl:989e12},
+ {id:"h100",n:"H100 · 80 GB · 3,35 TB/s",vram:80e9,bw:3.35e12,fl:989e12},
+ {id:"a100",n:"A100 · 80 GB · 2,0 TB/s",vram:80e9,bw:2.0e12,fl:312e12},
+ {id:"l40s",n:"L40S · 48 GB · 864 GB/s",vram:48e9,bw:864e9,fl:362e12},
+ {id:"b200",n:"B200 · 180 GB · 8,0 TB/s",vram:180e9,bw:8.0e12,fl:2250e12}
+];
+const CTXS=[1024,2048,4096,8192,12288,16384,24576,32768,49152,65536,98304,131072,
+            163840,196608,262144,327680,393216,458752,524288,655360];
+const OUTS=[30,64,128,252,400,690,1000,1671,2500,4000,6571,10000,16000,24000,32000,48000];
+const MFU=0.5, OVH=0.08, ACT=0.12;
+const SLO_TTFT=2.0, SLO_ITL=0.05;
+/* `rps` es la carga OBJETIVO en % de la capacidad: mantiene el control siempre en
+   el rango interesante, sea el modelo un 8B en una L40S o un MoE en 64 GPUs. */
+let S={m:0,g:0,n:8,ctx:4,out:4,rps:55,cache:0};
+
+const kvPerTok=m=>2*(m.mla? m.mla*m.L*(m.bpp>=2?2:2)/2 : m.L*m.kvh*m.hd*2);
+function kvBytes(m){ return m.mla ? m.L*m.mla*2 : 2*m.L*m.kvh*m.hd*2; }
+
+function compute(){
+  const m=MODELS[S.m], g=GPUS[S.g], n=S.n;
+  const ctx=CTXS[S.ctx-1], out=OUTS[S.out-1], hit=S.cache/100;
+  const W=m.P*m.bpp;                       // bytes de pesos
+  const kvt=kvBytes(m);                    // bytes de KV por token
+  const total=n*g.vram;
+  const act=total*ACT*0 + n*g.vram*0.06;   // buffers de activación ≈6% por GPU
+  const ovh=total*OVH;
+  const kvBudget=total-W-act-ovh;
+  const fits=kvBudget>0;
+  const maxSeq=fits? Math.max(0,Math.floor(kvBudget/(ctx*kvt))) : 0;
+
+  // prefill (compute-bound), descontando el prefijo en caché
+  const newTok=Math.max(1,ctx*(1-hit));
+  const tPre=2*m.A*newTok/(n*g.fl*MFU);
+
+  // capacidad: dos techos distintos, manda el menor
+  const Bmax=Math.max(1,Math.min(maxSeq,256));
+  const tStepMax=(W+Bmax*ctx*kvt)/(n*g.bw);
+  const capDec=(Bmax/tStepMax)/out;         // techo de decode (tokens/s ÷ salida)
+  const capPre=1/tPre;                      // techo de prefill (se serializa en la GPU)
+  const cap=Math.min(capDec,capPre);
+  const bound=capPre<capDec? "prefill":"decode";
+  const rps=S.rps/100*cap;                  // llegadas derivadas de la carga objetivo
+
+  // ocupación real: ley de Little (B = llegadas × tiempo en el sistema), acotada
+  // por la VRAM. Itera porque el tiempo de servicio depende del propio lote.
+  let B=1, tStep=(W+ctx*kvt)/(n*g.bw), svc=tPre+out*tStep;
+  for(let i=0;i<4;i++){
+    B=Math.max(1,Math.min(Bmax,Math.ceil(rps*svc)));
+    tStep=(W+B*ctx*kvt)/(n*g.bw);
+    svc=tPre+out*tStep;
+  }
+  const tokS=B/tStep;                       // tokens/s del sistema
+  const itl=tStep;                          // por usuario
+  const tDec=out*tStep;
+  const rho=cap>0? rps/cap : Infinity;
+  /* El TTFT NO espera a que otros terminen de generar: con batching continuo la
+     solicitud entra al lote en cuanto hay slot. Lo que se serializa —y por tanto
+     encola— es el prefill. Modelamos esa etapa como M/M/1. */
+  const rhoPre=capPre>0? rps/capPre : Infinity;
+  const wait=(rho<1&&rhoPre<1)? (rhoPre/(1-rhoPre))*tPre : Infinity;
+  const ttft50=wait<Infinity? wait+tPre : Infinity;
+  const ttft95=wait<Infinity? wait*3+tPre : Infinity;
+
+  return {m,g,n,ctx,out,rps,hit,W,kvt,total,act,ovh,kvBudget,fits,maxSeq,B,Bmax,bound,
+          tPre,tStep,tokS,itl,tDec,svc,cap,capPre,capDec,rho,rhoPre,wait,ttft50,ttft95};
+}
+
+function rampFor(x){ // 0..1 → color de la rampa térmica
+  return cssv(RAMP[Math.min(4,Math.max(0,Math.floor(x*5)))]);
+}
+
+function render(){
+  const r=compute();
+  $("#o-n").textContent=r.n+(r.n===1?" GPU":" GPUs");
+  $("#o-ctx").textContent=fmt(r.ctx)+" tok";
+  $("#o-out").textContent=fmt(r.out)+" tok";
+  $("#o-rps").textContent=fmt(S.rps)+"% · "+(r.rps<1?fmt(r.rps,2):fmt(r.rps,1))+" req/s";
+  $("#o-cache").textContent=fmt(r.hit*100)+"%";
+
+  const K=[
+   ["Cabe el modelo",r.fits?"Sí":"NO",r.fits?"":"faltan "+bytes(-r.kvBudget),r.fits?cssv("--ok"):cssv("--crit")],
+   ["Usuarios simultáneos",r.fits?fmt(r.maxSeq):"0","con "+fmt(r.ctx)+" tok c/u",
+     rampFor(r.maxSeq<4?0.9:r.maxSeq<16?0.6:0.1)],
+   ["TTFT p50",r.rho<1?dur(r.ttft50):"∞","SLO "+SLO_TTFT+" s",
+     r.rho>=1||r.ttft50>SLO_TTFT?cssv("--crit"):cssv("--ok")],
+   ["TTFT p95",r.rho<1?dur(r.ttft95):"∞","cola incluida",
+     r.rho>=1||r.ttft95>SLO_TTFT?cssv("--crit"):cssv("--ok")],
+   ["ITL por usuario",dur(r.itl),fmt(1/r.itl,0)+" t/s percibidos",
+     r.itl>SLO_ITL?cssv("--warn"):cssv("--ok")],
+   ["Throughput",fmt(r.tokS)+"","tokens/s del sistema",cssv("--t0")],
+   ["Utilización",r.cap>0?fmt(Math.min(r.rho,9.99)*100)+"%":"—",
+     "techo "+fmt(r.cap,2)+" req/s · limita "+r.bound, rampFor(Math.min(1,r.rho))],
+   ["Espera en cola",r.rho<1?dur(r.wait):"∞","antes del prefill",
+     rampFor(Math.min(1,r.rho))]
+  ];
+  $("#kpis").innerHTML=K.map(([k,v,u,c])=>
+    `<div class="kpi" style="--kc:${c}"><div class="k">${esc(k)}</div>
+      <div class="v">${esc(v)}</div><div class="u">${esc(u)}</div></div>`).join("");
+
+  const parts=[
+    ["Pesos del modelo",r.W,cssv("--indigo")],
+    ["Activaciones",r.act,cssv("--t1")],
+    ["Overhead del framework",r.ovh,cssv("--faint")],
+    ["KV cache disponible",Math.max(0,r.kvBudget),cssv("--t0")]
+  ];
+  const kvUse=Math.min(Math.max(0,r.kvBudget), r.B*r.ctx*r.kvt);
+  $("#vram").innerHTML=
+    `<div class="bar-row"><span class="bl">Total instalado</span>
+      <span class="track">${parts.map(p=>
+        `<span class="seg" style="width:${Math.max(0,100*p[1]/r.total)}%;background:${p[2]}"
+          title="${esc(p[0])}"></span>`).join("")}</span>
+      <span class="bv">${bytes(r.total)}</span></div>`
+    +parts.map(p=>`<div class="bar-row"><span class="bl">${esc(p[0])}</span>
+      <span class="track"><span class="seg" style="width:${Math.max(0,Math.min(100,100*p[1]/r.total))}%;background:${p[2]}"></span></span>
+      <span class="bv">${bytes(Math.max(0,p[1]))}</span></div>`).join("")
+    +`<div class="bar-row"><span class="bl">KV en uso ahora</span>
+      <span class="track"><span class="seg" style="width:${r.kvBudget>0?Math.min(100,100*kvUse/r.kvBudget):0}%;background:${rampFor(r.kvBudget>0?kvUse/r.kvBudget:1)}"></span></span>
+      <span class="bv">${bytes(kvUse)}</span></div>`
+    +`<div class="bar-row"><span class="bl">Pesos vs KV por paso</span>
+      <span class="track"><span class="seg" style="width:${100*r.W/(r.W+r.B*r.ctx*r.kvt)}%;background:${cssv("--indigo")}"></span><span class="seg" style="width:${100*r.B*r.ctx*r.kvt/(r.W+r.B*r.ctx*r.kvt)}%;background:${cssv("--t3")}"></span></span>
+      <span class="bv">${fmt(100*r.B*r.ctx*r.kvt/(r.W+r.B*r.ctx*r.kvt))}% KV</span></div>`;
+
+  let cls="st-ok", txt;
+  if(!r.fits){ cls="st-crit";
+    txt=`<b>No arranca.</b> Los pesos (${bytes(r.W)}) más el overhead no caben en
+      ${r.n} × ${esc(r.g.n.split(" · ")[0])} = ${bytes(r.total)}. Faltan
+      ${bytes(-r.kvBudget)} antes de reservar un solo token de KV. Hay que cuantizar,
+      añadir GPUs o cambiar de modelo.`;
+  } else if(r.maxSeq<1){ cls="st-crit";
+    txt=`<b>Cabe el modelo, no cabe el trabajo.</b> Queda ${bytes(r.kvBudget)} de KV, pero
+      una sola secuencia de ${fmt(r.ctx)} tokens necesita
+      ${bytes(r.ctx*r.kvt)}. Cero usuarios simultáneos: el clásico «entra en la GPU»
+      que no sirve para servir.`;
+  } else if(r.rho>=1){ cls="st-crit";
+    txt=`<b>Saturado.</b> Llegan ${fmt(r.rps,2)} req/s y la capacidad es
+      ${fmt(r.cap,2)} req/s. La cola crece sin límite: la latencia no se degrada, explota.
+      Se necesitan ~${Math.ceil(r.rho)} réplicas solo para no perder terreno.`;
+  } else if(r.ttft95>SLO_TTFT||r.itl>SLO_ITL){ cls="st-warn";
+    const dom = r.wait>r.tPre
+      ? `Y el culpable es <b>la cola</b> (${dur(r.wait)} esperando vs ${dur(r.tPre)} de
+         prefill): sobra máquina para el trabajo, falta máquina para la simultaneidad.`
+      : `Y el culpable <b>no es la cola</b>: son ${dur(r.tPre)} de prefill contra solo
+         ${dur(r.wait)} de espera. Añadir réplicas no arregla esto — hay que acortar el
+         prompt, cachear el prefijo o poner más FLOPs por réplica.`;
+    txt=`<b>Funciona, incumple.</b> Al ${fmt(r.rho*100)}% de utilización el p95 de TTFT es
+      ${dur(r.ttft95)} y el ITL ${dur(r.itl)}. El sistema «anda» y aun así rompe el SLO:
+      esta es la diferencia entre throughput y <em>goodput</em>, y es la razón por la que
+      un benchmark de tokens/s no dice si el servicio sirve. ${dom}`;
+  } else {
+    txt=`<b>Dentro de SLO.</b> ${fmt(r.maxSeq)} usuarios simultáneos,
+      ${fmt(r.rho*100)}% de utilización, p95 de TTFT ${dur(r.ttft95)}.
+      Nota lo estrecho del margen: sube las llegadas un poco y mira el codo de la curva.`;
+  }
+  $("#verdict").innerHTML=`<div class="verdict ${cls}">${txt}</div>`;
+  draw(r);
+}
+
+function draw(r){
+  r=r||compute();
+  const cv=$("#cv"), dpr=Math.min(2,devicePixelRatio||1);
+  const W=cv.clientWidth||900, H=260;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const x=cv.getContext("2d"); x.scale(dpr,dpr); x.clearRect(0,0,W,H);
+  const P={l:52,r:14,t:16,b:30}, iw=W-P.l-P.r, ih=H-P.t-P.b;
+  const YMAX=Math.max(4,SLO_TTFT*2.2);
+  const X=u=>P.l+u*iw, Y=t=>P.t+ih-Math.min(1,t/YMAX)*ih;
+
+  x.strokeStyle=cssv("--line"); x.lineWidth=1; x.font="10px "+cssv("--f-data");
+  x.fillStyle=cssv("--faint");
+  for(let i=0;i<=4;i++){ const t=YMAX*i/4, y=Y(t);
+    x.beginPath(); x.moveTo(P.l,y); x.lineTo(W-P.r,y); x.stroke();
+    x.textAlign="right"; x.fillText(t.toFixed(1)+"s",P.l-6,y+3); }
+  for(let i=0;i<=5;i++){ const u=i/5, px=X(u);
+    x.textAlign="center"; x.fillText(Math.round(u*100)+"%",px,H-10); }
+  x.textAlign="center"; x.fillText("utilización del sistema",P.l+iw/2,H-1);
+
+  // SLO
+  x.setLineDash([4,3]); x.strokeStyle=cssv("--crit"); x.beginPath();
+  x.moveTo(P.l,Y(SLO_TTFT)); x.lineTo(W-P.r,Y(SLO_TTFT)); x.stroke(); x.setLineDash([]);
+  x.fillStyle=cssv("--crit"); x.textAlign="left";
+  x.fillText("SLO TTFT "+SLO_TTFT+" s",P.l+4,Y(SLO_TTFT)-4);
+
+  // curva TTFT(ρ) con degradado térmico. `u` es la utilización global; la cola vive
+  // en la etapa de prefill, así que se reescala por la razón entre ambos techos.
+  const k=r.cap/r.capPre;
+  x.lineWidth=2.2;
+  let prev=null;
+  for(let i=0;i<=240;i++){
+    const u=i/240*0.985, up=Math.min(0.995,u*k);
+    const t=(up/(1-up))*r.tPre+r.tPre;
+    const p=[X(u),Y(t)];
+    if(prev){ x.strokeStyle=rampFor(u); x.beginPath();
+      x.moveTo(prev[0],prev[1]); x.lineTo(p[0],p[1]); x.stroke(); }
+    prev=p;
+  }
+  // punto de operación
+  if(r.rho<1){
+    const px=X(r.rho), py=Y(r.ttft50);
+    x.strokeStyle=cssv("--ink-dim"); x.setLineDash([2,3]); x.beginPath();
+    x.moveTo(px,P.t); x.lineTo(px,P.t+ih); x.stroke(); x.setLineDash([]);
+    x.fillStyle=cssv("--ink"); x.beginPath(); x.arc(px,py,4,0,7); x.fill();
+    x.textAlign=r.rho>0.7?"right":"left";
+    x.fillText(" aquí: "+dur(r.ttft50)+" ",px+(r.rho>0.7?-6:6),Math.max(P.t+10,py-9));
+  } else {
+    x.fillStyle=cssv("--crit"); x.textAlign="center";
+    x.font="600 12px "+cssv("--f-disp");
+    x.fillText("FUERA DE ESCALA — SISTEMA SATURADO",P.l+iw/2,P.t+ih/2);
+  }
+}
+
+(function initSim(){
+  $("#f-model").innerHTML=MODELS.map((m,i)=>`<option value="${i}">${esc(m.n)}</option>`).join("");
+  $("#f-gpu").innerHTML=GPUS.map((g,i)=>`<option value="${i}">${esc(g.n)}</option>`).join("");
+  const bind=(sel,key,isNum)=>$(sel).addEventListener("input",e=>{
+    S[key]=isNum?+e.target.value:+e.target.value; render(); });
+  bind("#f-model","m"); bind("#f-gpu","g"); bind("#f-n","n"); bind("#f-ctx","ctx");
+  bind("#f-out","out"); bind("#f-rps","rps"); bind("#f-cache","cache");
+  addEventListener("resize",()=>{ if($("#v-sim").classList.contains("on")) draw(); });
+  render();
+})();
+</script>
+<script>
+"use strict";
+/* ═════════ 04 · consideraciones al TTFT ═════════ */
+(function(){
+  /* Barras proporcionales, pero con etiquetas cualitativas: interesa el orden de
+     magnitud entre pasos, no el segundo exacto. */
+  const CHAIN=[
+   ["Traer el modelo por la red","es el paso que domina todo lo demás","varios minutos",560,"--t4"],
+   ["Leerlo del disco","decenas de gigabytes","segundos",20,"--t2"],
+   ["Subirlo a la GPU","sorprendentemente rápido","casi instantáneo",2.8,"--t1"],
+   ["Prepararlo para atender","repartirlo y calentarlo","medio minuto",30,"--t2"],
+   ["Recién ahora recibe gente","antes de esto no sirve para nada","—",0,"--t0"]
+  ];
+  const mx=Math.max(...CHAIN.map(c=>c[3]));
+  $("#chain").innerHTML=CHAIN.map((c,i)=>
+   `<div class="link" style="--lc:var(${c[4]})">
+      <span class="li">${String(i+1).padStart(2,"0")}</span>
+      <span class="ln">${esc(c[0])}<s>${esc(c[1])}</s></span>
+      <span class="lt">${esc(c[2])}</span>
+      <span class="lbar"><i style="width:${100*c[3]/mx}%"></i></span>
+    </div>`).join("")
+   +`<div class="link" style="--lc:var(--t3);border-top-width:0">
+      <span class="li">Σ</span><span class="ln"><b>Encender un servidor: minutos</b>
+      <s>y se paga desde el primero</s></span></div>`;
+
+  const PAR=[
+   ["Partir cada capa","La misma capa se reparte entre varias GPUs.",
+    "Es lo más rápido, pero obliga a que las GPUs se hablen en cada palabra que escriben. Por eso solo funciona bien dentro de una misma máquina.","--t3"],
+   ["Partir por etapas","Cada GPU se queda con una parte del modelo, en cadena.",
+    "Aguanta redes más lentas, pero si no le llega trabajo constante las GPUs se quedan esperando su turno.","--t2"],
+   ["Repartir especialistas","Algunos modelos son muchos submodelos y solo se usan algunos por palabra.",
+    "Permite modelos enormes, a cambio de mucha conversación entre GPUs y del riesgo de que unos especialistas se saturen y otros no hagan nada.","--t4"],
+   ["Copias completas","Varios servidores idénticos, cada uno con el modelo entero.",
+    "Lo único que atiende a más gente de forma simple, y lo único que da respaldo real si una máquina se cae. También multiplica el costo.","--t0"]
+  ];
+  $("#par").innerHTML=PAR.map(p=>
+   `<div class="card" style="border-top:2px solid var(${p[3]})">
+      <div class="eyebrow" style="color:var(${p[3]})">${esc(p[0])}</div>
+      <p style="font-size:.92rem;margin-top:.4rem"><b>${esc(p[1])}</b></p>
+      <p class="note">${esc(p[2])}</p></div>`).join("");
+
+  /* Comparación cualitativa: la relación entre las barras es la real (~10×),
+     pero no se rotula ningún GB/s. */
+  $("#icbars").innerHTML=[
+   ["Entre GPUs de la misma máquina",100,"--t0","rápido"],
+   ["Entre máquinas distintas",10,"--t3","~10 veces más lento"]
+  ].map(([l,w,c,v])=>
+   `<div class="bar-row"><span class="bl">${esc(l)}</span>
+      <span class="track"><span class="seg" style="width:${w}%;background:var(${c})"></span></span>
+      <span class="bv">${esc(v)}</span></div>`).join("");
+
+  const FAILS=[
+   ["Se muere una GPU y cae el servidor completo","--t4",
+    "Cuando el modelo está repartido, todas las GPUs trabajan en cada palabra. Si una falla no se degrada el servicio: desaparece. Por eso el respaldo se compra de a máquinas completas, no de a tarjetas."],
+   ["La capacidad queda mal repartida","--t3",
+    "Leer preguntas y escribir respuestas se pueden separar en grupos de máquinas distintos, y hay que acertar la proporción a mano. Equivocarse deja capacidad pagada sin usar."],
+   ["El sistema se pone a oscilar","--t3",
+    "Rechazar mal las solicitudes cuando hay saturación hace que las máquinas alternen entre llenas y vacías. Es un problema de control, y no se arregla comprando más GPUs."],
+   ["Una parte del modelo se satura","--t2",
+    "En modelos hechos de especialistas, algunos reciben mucho más trabajo que otros. La GPU que los aloja frena a todas las demás."],
+   ["El vecino ruidoso, dentro de la GPU","--t2",
+    "Como la GPU atiende a varios a la vez, alguien con un texto enorme alarga la espera de todo el grupo. La latencia de una persona depende de quién más esté conectado."],
+   ["Se llena la memoria y hay que rehacer trabajo","--t3",
+    "Cuando no queda espacio, alguna conversación se descarta y al volver se relee completa. Pasa justo cuando hay más carga: el sistema se castiga solo en el peor momento."],
+   ["Lo que ahorras a veces no aparece","--t2",
+    "Reutilizar lo ya calculado funciona muy bien dentro de una conversación, pero a nivel de flota depende de que cada persona vuelva al mismo servidor. Si el reparto no lo respeta, el ahorro se evapora."],
+   ["Alguien tiene que estar de guardia","--t4",
+    "Actualizar sin cortar el servicio, vaciar máquinas, cambiar versiones de modelo, mirar las esperas, contestar a las tres de la mañana. Es lo único que no aparece en ninguna comparación de precio por token, y suele ser lo más caro."]
+  ];
+  $("#fails").innerHTML=FAILS.map(f=>
+   `<div class="card" style="border-left:3px solid var(${f[1]})">
+      <h4 style="font:600 13px/1.25 var(--f-disp);letter-spacing:.06em;text-transform:uppercase">${esc(f[0])}</h4>
+      <p class="note" style="margin-top:.5rem">${esc(f[2])}</p></div>`).join("");
+
+  const AG=[
+   ["Casi nadie está escribiendo","--t4",
+    "La mayoría de las vueltas no las pide una persona: las pide el propio agente, respondiendo al resultado de una herramienta. El sistema trabaja para sí mismo."],
+   ["Las conversaciones son enormes y desparejas","--t3",
+    "Unas ocupan poco y otras muchísimo, y la diferencia entre el caso típico y el caso frecuente es brutal. Dimensionar por el promedio garantiza quedar corto."],
+   ["Llega poca gente y cada uno cuesta mucho","--t2",
+    "No es un servicio de muchas solicitudes chicas, sino de pocas solicitudes carísimas. Es el escenario más difícil de planificar: no se compensa por volumen."],
+   ["El reloj lo maneja el humano","--t0",
+    "Casi todo el tiempo de una sesión es alguien leyendo y pensando, con su conversación ocupando memoria de GPU sin producir nada."]
+  ];
+  $("#ag").innerHTML=AG.map(a=>
+   `<div class="card" style="border-left:3px solid var(${a[1]})">
+      <h4 style="font:600 13px/1.25 var(--f-disp);letter-spacing:.06em;text-transform:uppercase">${esc(a[0])}</h4>
+      <p class="note" style="margin-top:.5rem">${esc(a[2])}</p></div>`).join("");
+})();
+</script>
+</body>
+</html>

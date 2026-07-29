@@ -1,0 +1,5 @@
+transformers==5.13.1
+datasets==4.8.5
+accelerate==1.14.0
+# torch: en Colab usa el preinstalado (CUDA); este pin es para el entorno local (uv).
+torch==2.12.1
