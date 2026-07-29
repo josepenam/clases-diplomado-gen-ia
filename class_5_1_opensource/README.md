@@ -8,6 +8,11 @@ abierto **en tu propia máquina** con **Ollama**, **afinarlo** a un corpus con f
 velocidad** con **Groq**. El hilo conductor: con pesos abiertos, tú eliges dónde vive el
 modelo — y esa es una decisión de producto, no solo técnica.
 
+El deck cierra el arco de fine-tuning con un bloque sobre **destilación de modelos**: qué es,
+su arquitectura general (maestro → señal → estudiante, y la frontera entre destilación de
+*caja blanca* y de *caja negra*), las tres formas de hacerla, y la disputa por destilación
+entre EE. UU. y China que hoy define el debate open vs closed.
+
 ---
 
 ## Objetivos de aprendizaje
@@ -22,9 +27,12 @@ Al terminar la clase, un estudiante puede:
    `Trainer`, entendiendo tokenización, data collator y el bucle de entrenamiento.
 4. Explicar por qué **los datos definen la lengua y el dominio** del modelo resultante (y qué
    haría falta para un modelo en español).
-5. Consumir modelos abiertos servidos por **Groq** (`gpt-oss-20b`/`120b`) y comparar la
+5. Distinguir **fine-tuning de destilación** (de dónde sale el dato de entrenamiento), describir
+   la arquitectura maestro–estudiante y por qué la frontera *caja blanca / caja negra* es la que
+   separa una técnica estándar de un conflicto legal.
+6. Consumir modelos abiertos servidos por **Groq** (`gpt-oss-20b`/`120b`) y comparar la
    velocidad real (t/s) entre inferencia local y nube especializada.
-6. Elegir dónde vive cada credencial y **nunca** versionar un `.env` real.
+7. Elegir dónde vive cada credencial y **nunca** versionar un `.env` real.
 
 ## Prerrequisitos
 
@@ -86,6 +94,10 @@ uv run --with jupyterlab jupyter lab inferencia_local_con_ollama.ipynb
 Fine-tuning completo de **DistilGPT2** sobre un subset de **WikiText-2** con `Trainer`:
 tokenización, data collator, entrenamiento (~250 pasos, minutos en T4/MPS), generación y
 comparación contra el modelo original. Los artefactos quedan en `outputs/` (git-ignorado).
+
+> El bloque de **destilación** del deck (slides 21–25) sale directo de esta lección: DistilGPT2
+> ya *es* una destilación de GPT-2 (124M → 82M parámetros, 12 → 6 capas). No tiene notebook
+> propio; se dicta después del caso práctico y entrega a la discusión open vs closed.
 
 ```bash
 cd leccion2_finetuning_llm
