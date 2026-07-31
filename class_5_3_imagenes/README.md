@@ -5,10 +5,11 @@ Diplomado de Extensión en IA Generativa para Organizaciones.
 Esta clase recorre la visión por computador de punta a punta: la visión **"clásica"**
 (convoluciones, CNNs y **YOLO** corriendo en vivo sobre tu webcam), el salto a los **LLMs
 multimodales** que describen y razonan sobre imágenes, la **generación** de imágenes desde
-texto (el arco VAEs → GANs → difusión, aterrizado en `gpt-image-2`), y un caso de negocio
-que junta todo: **OCR semántico** — convertir un formulario escaneado y manuscrito en JSON
-estructurado. El hilo conductor: la imagen dejó de ser un tipo de dato especial; hoy entra
-y sale de los mismos modelos que ya usas para texto.
+texto (el arco VAEs → GANs → difusión, aterrizado en `gpt-image-2`), y el aterrizaje en
+documentos: **OCR semántico** (un formulario manuscrito → JSON), **parsing agéntico** (un
+informe con tablas, a escala) y **RAG visual** (buscar páginas por lo que se ve, sin OCR).
+El hilo conductor: la imagen dejó de ser un tipo de dato especial; hoy entra y sale de los
+mismos modelos que ya usas para texto.
 
 ---
 
@@ -28,16 +29,27 @@ Al terminar la clase, un estudiante puede:
    por un LLM, entendiendo costos y el requisito de organización verificada.
 6. Implementar **OCR semántico**: extraer datos estructurados (esquema Pydantic +
    `with_structured_output`) desde un documento escaneado con manuscrito.
-7. Elegir dónde vive cada credencial y **nunca** versionar un `.env` real.
+7. Comparar tres niveles de **extracción de documentos** (texto embebido, DIY visual,
+   parsing agéntico) y elegir cuál corresponde según volumen × complejidad × auditabilidad.
+8. Montar un **RAG visual**: indexar páginas como imágenes con embeddings multimodales y
+   recuperar la página correcta por similitud, sin OCR ni chunking.
+9. Elegir dónde vive cada credencial y **nunca** versionar un `.env` real.
 
 ## Prerrequisitos
 
 - Un entorno local con **Python 3.12**.
 - **[uv](https://github.com/astral-sh/uv)** para crear y sincronizar los entornos.
-- **API key de OpenAI** ([platform.openai.com](https://platform.openai.com)) — lecciones 2,
-  3 y 4. Para la lección 3 (generación) la organización debe estar **verificada**.
-- Una **webcam** — solo lección 1 (que es local por diseño; las lecciones 2–4 también
+- **API key de OpenAI** ([platform.openai.com](https://platform.openai.com)) — lecciones 2
+  a 6. Para la lección 3 (generación) la organización debe estar **verificada**.
+- **API key de LlamaCloud** ([cloud.llamaindex.ai](https://cloud.llamaindex.ai)) — solo el
+  nivel 2 de la lección 5. Plan Free: 10.000 créditos/mes, sin tarjeta.
+- **API key de Gemini** ([aistudio.google.com](https://aistudio.google.com)) — solo la
+  lección 6. Gratis.
+- Una **webcam** — solo lección 1 (que es local por diseño; las lecciones 2–6 también
   corren en Google Colab).
+
+> Las lecciones 5 y 6 corren **sin** las llaves de LlamaCloud/Gemini: esas celdas se saltan
+> con una instrucción clara, y el resto del notebook funciona igual.
 
 ---
 
@@ -56,8 +68,14 @@ class_5_3_imagenes/
 │   └── entendimiento_de_imagenes.ipynb
 ├── leccion3_generacion_imagenes/          LECCIÓN 3 · Generación con gpt-image-2
 │   └── generacion_de_imagenes.ipynb
-└── leccion4_ocr_semantico/                LECCIÓN 4 · Caso práctico: OCR semántico
-    └── ocr_semantico.ipynb
+├── leccion4_ocr_semantico/                LECCIÓN 4 · Caso práctico: OCR semántico
+│   └── ocr_semantico.ipynb
+├── leccion5_parsing_agentico/             LECCIÓN 5 · Parsing agéntico de documentos
+│   ├── parsing_agentico.ipynb
+│   └── data/documento_ejemplo.pdf         IPoM jun-2026 cap. II (Banco Central de Chile)
+└── leccion6_rag_visual/                   LECCIÓN 6 · RAG visual (sin OCR)
+    ├── rag_visual.ipynb
+    └── data/documento_ejemplo.pdf         el mismo PDF de la lección 5
 ```
 
 Cada lección es **autocontenida**: su propio `README`, su entorno `uv` (`pyproject.toml` +
@@ -116,6 +134,32 @@ UV_CACHE_DIR=.uv-cache uv sync --python 3.12
 uv run --with jupyterlab jupyter lab ocr_semantico.ipynb
 ```
 
+### Lección 5 — `leccion5_parsing_agentico/`  *(deck: "Documentos a escala")*
+
+El mismo informe del Banco Central por **tres niveles**: `pypdf` (texto embebido, US$0),
+DIY visual (`gpt-5-mini` transcribe la página a Markdown) y **LlamaParse v2** en tier `fast`
+vs `agentic`, lado a lado. Cierra con el mercado y el criterio de decisión.
+
+```bash
+cd leccion5_parsing_agentico
+cp .env.example .env                       # OPENAI_API_KEY (+ LLAMA_CLOUD_API_KEY opcional)
+UV_CACHE_DIR=.uv-cache uv sync --python 3.12
+uv run --with jupyterlab jupyter lab parsing_agentico.ipynb
+```
+
+### Lección 6 — `leccion6_rag_visual/`  *(deck: "Buscar por lo que se VE")*
+
+La alternativa al parsing: cada página se indexa **como imagen** con `gemini-embedding-2`,
+la pregunta encuentra la página por similitud coseno (numpy, sin base vectorial) y **gpt-5**
+responde mirando la página, con cita. Es el patrón ColPali en versión API, sin GPU.
+
+```bash
+cd leccion6_rag_visual
+cp .env.example .env                       # OPENAI_API_KEY (+ GEMINI_API_KEY opcional)
+UV_CACHE_DIR=.uv-cache uv sync --python 3.12
+uv run --with jupyterlab jupyter lab rag_visual.ipynb
+```
+
 ---
 
 ## Entornos
@@ -129,16 +173,19 @@ separado sin resolver dependencias de las demás.
 | `leccion2_vision_llm/` | **uv** · `>=3.12,<3.13` | langchain-openai 1.3.5 · langchain-core 1.4.9 · pillow 12.3.0 |
 | `leccion3_generacion_imagenes/` | **uv** · `>=3.12,<3.13` | langchain-openai 1.3.5 · langchain-core 1.4.9 · pillow 12.3.0 |
 | `leccion4_ocr_semantico/` | **uv** · `>=3.12,<3.13` | langchain-openai 1.3.5 · langchain-core 1.4.9 · pydantic 2.13.4 |
+| `leccion5_parsing_agentico/` | **uv** · `>=3.12,<3.13` | llama-cloud 2.13.0 · pypdf 6.14.2 · pypdfium2 5.12.1 · langchain-openai 1.3.5 |
+| `leccion6_rag_visual/` | **uv** · `>=3.12,<3.13` | google-genai 2.16.0 · pypdfium2 5.12.1 · numpy 2.5.1 · langchain-openai 1.3.5 |
 
-Las lecciones 2–4 también corren en **Google Colab** (la primera celda instala lo
+Las lecciones 2–6 también corren en **Google Colab** (la primera celda instala lo
 necesario); la lección 1 es local por diseño (necesita la webcam y una ventana en vivo).
 Cada lección documenta el registro del kernel de Jupyter (`ipykernel`) para su `.venv`.
 
 ## Secrets
 
-**Never commit a real `.env`.** Las lecciones 2, 3 y 4 usan `OPENAI_API_KEY`: copia el
-`.env.example` de cada lección a `.env` y complétalo. Los `.env` reales están git-ignorados
-(por lección y en la raíz del repo) y **nunca** se versionan. En Colab las llaves se leen
-desde `google.colab.userdata` con los mismos nombres.
+**Never commit a real `.env`.** Las lecciones 2 a 6 usan `OPENAI_API_KEY`; la lección 5 suma
+`LLAMA_CLOUD_API_KEY` y la 6 `GEMINI_API_KEY` (ambas opcionales: sin ellas esas celdas se
+saltan). Copia el `.env.example` de cada lección a `.env` y complétalo. Los `.env` reales
+están git-ignorados (por lección y en la raíz del repo) y **nunca** se versionan. En Colab
+las llaves se leen desde `google.colab.userdata` con los mismos nombres.
 
 > La lección 1 **no requiere llaves**: YOLO corre offline con pesos descargados de GitHub.
