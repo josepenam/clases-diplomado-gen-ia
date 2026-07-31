@@ -1,7 +1,7 @@
 # leccion3_generacion_imagenes
 
 **Generación de imágenes desde texto**: GPT-5 orquesta la herramienta `image_generation`
-(modelo **gpt-image-1**) a través de la Responses API de OpenAI, todo desde LangChain. El
+(modelo **gpt-image-2**) a través de la Responses API de OpenAI, todo desde LangChain. El
 notebook genera una imagen, la muestra y la guarda en `../outputs/`.
 
 Tercera de las cuatro lecciones de la Clase 5.3 — la contracara de la lección 2: en vez de
@@ -13,13 +13,16 @@ resultado comercial de esa historia.
 | Paso | Detalle |
 |---|---|
 | Setup | Carga `OPENAI_API_KEY` desde Colab userdata o `.env`. |
-| Tool | `image_generation` (gpt-image-1, 1024×1024, calidad alta) atado a GPT-5 con `bind_tools`. |
+| Tool | `image_generation` (gpt-image-2, 1024×1024, calidad alta) atado a GPT-5 con `bind_tools`. |
 | Generación | El LLM interpreta el pedido y llama al generador; la imagen vuelve en base64. |
 | Salida | Se muestra inline y se guarda en `../outputs/perros_poker.jpg`. |
 
-> **IMPORTANTE:** para usar `gpt-image-1` OpenAI exige una **organización verificada**
-> (validación de identidad en la consola), y cada imagen cuesta dinero (~US$0.17 en calidad
-> alta 1024×1024). Para iterar barato, baja `quality` a `"medium"` o `"low"`.
+> **IMPORTANTE:** para usar `gpt-image-2` OpenAI exige una **organización verificada**
+> (validación de identidad en la consola), y cada imagen cuesta dinero (1024×1024: ~US$0.006
+> en calidad baja, ~US$0.05 media, ~US$0.21 alta). Para iterar barato, baja `quality`.
+>
+> La lección usaba `gpt-image-1`, deprecado por OpenAI en junio 2026 (se apaga el
+> 2026-12-01); `gpt-image-2` es el reemplazo oficial y funciona con el mismo código.
 
 ## Requisitos
 

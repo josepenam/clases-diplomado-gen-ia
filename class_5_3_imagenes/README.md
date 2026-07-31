@@ -5,7 +5,7 @@ Diplomado de Extensión en IA Generativa para Organizaciones.
 Esta clase recorre la visión por computador de punta a punta: la visión **"clásica"**
 (convoluciones, CNNs y **YOLO** corriendo en vivo sobre tu webcam), el salto a los **LLMs
 multimodales** que describen y razonan sobre imágenes, la **generación** de imágenes desde
-texto (el arco VAEs → GANs → difusión, aterrizado en `gpt-image-1`), y un caso de negocio
+texto (el arco VAEs → GANs → difusión, aterrizado en `gpt-image-2`), y un caso de negocio
 que junta todo: **OCR semántico** — convertir un formulario escaneado y manuscrito en JSON
 estructurado. El hilo conductor: la imagen dejó de ser un tipo de dato especial; hoy entra
 y sale de los mismos modelos que ya usas para texto.
@@ -23,7 +23,7 @@ Al terminar la clase, un estudiante puede:
 3. Pasarle imágenes a un **LLM multimodal** (GPT-5) vía LangChain — por URL o base64 — y
    conversar sobre su contenido.
 4. Describir cómo funcionan **VAEs, GANs y modelos de difusión** (espacio latente, redes
-   adversarias, denoising) y ubicar a Stable Diffusion / gpt-image-1 en esa historia.
+   adversarias, denoising) y ubicar a Stable Diffusion / gpt-image-2 en esa historia.
 5. Generar imágenes desde texto con la herramienta `image_generation` de OpenAI orquestada
    por un LLM, entendiendo costos y el requisito de organización verificada.
 6. Implementar **OCR semántico**: extraer datos estructurados (esquema Pydantic +
@@ -54,7 +54,7 @@ class_5_3_imagenes/
 │   └── yolo_tracking.py
 ├── leccion2_vision_llm/                   LECCIÓN 2 · Entendimiento de imágenes con LLMs
 │   └── entendimiento_de_imagenes.ipynb
-├── leccion3_generacion_imagenes/          LECCIÓN 3 · Generación con gpt-image-1
+├── leccion3_generacion_imagenes/          LECCIÓN 3 · Generación con gpt-image-2
 │   └── generacion_de_imagenes.ipynb
 └── leccion4_ocr_semantico/                LECCIÓN 4 · Caso práctico: OCR semántico
     └── ocr_semantico.ipynb
@@ -90,11 +90,11 @@ uv run --with jupyterlab jupyter lab entendimiento_de_imagenes.ipynb
 
 ### Lección 3 — `leccion3_generacion_imagenes/`  *(deck: "Generación de imágenes" — VAEs → GANs → difusión)*
 
-La teoría del deck aterrizada en su producto comercial: GPT-5 orquesta `gpt-image-1` vía la
+La teoría del deck aterrizada en su producto comercial: GPT-5 orquesta `gpt-image-2` vía la
 Responses API (`bind_tools`), la imagen vuelve en base64 y queda en `outputs/`.
 
-> Requiere organización de OpenAI **verificada**, y cada imagen cuesta (~US$0.17 en calidad
-> alta). Para iterar, baja `quality`.
+> Requiere organización de OpenAI **verificada**, y cada imagen cuesta (~US$0.21 en calidad
+> alta 1024×1024; ~US$0.006 en baja). Para iterar, baja `quality`.
 
 ```bash
 cd leccion3_generacion_imagenes
