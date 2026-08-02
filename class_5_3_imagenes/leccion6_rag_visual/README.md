@@ -24,8 +24,11 @@ convertir el documento a texto, se busca directo sobre los píxeles.
 ## Requisitos
 
 - Python 3.12 y [uv](https://github.com/astral-sh/uv), o Google Colab.
-- API key de OpenAI: https://platform.openai.com.
-- API key de Gemini (gratis): https://aistudio.google.com.
+- API key de OpenAI: https://platform.openai.com (para responder la pregunta).
+- API key de Gemini: https://aistudio.google.com — **gratis**, basta una cuenta de Google
+  (para indexar y buscar). Sin ella el notebook corre igual: la rasterización de las
+  páginas funciona y las celdas que llaman a la Gemini API se saltan con una instrucción
+  clara.
 
 ## Configuración
 
