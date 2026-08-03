@@ -1,0 +1,14 @@
+# Secrets — never commit the real .env
+.env
+.env.*
+!.env.example
+
+# Python / uv
+__pycache__/
+*.py[cod]
+.venv/
+.uv-cache/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store

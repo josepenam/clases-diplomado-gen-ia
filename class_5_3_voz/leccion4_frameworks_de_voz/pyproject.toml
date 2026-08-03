@@ -1,0 +1,16 @@
+[project]
+name = "leccion4-frameworks-de-voz"
+version = "0.1.0"
+description = "Agentes de voz voice-to-voice: el mismo agente en OpenAI Agents SDK, Pipecat y ElevenLabs Agents."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "openai-agents==0.19.2",
+    "pipecat-ai[openai,elevenlabs,local,silero]==1.7.0",
+    "elevenlabs==2.60.0",
+    "openai==2.52.0",
+    "python-dotenv==1.2.2",
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+package = false

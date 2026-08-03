@@ -11,6 +11,7 @@ Cada clase es autocontenida: su propio `README`, su entorno y sus lecciones paso
 | **3.6 — Producción** | Evaluar sistemas de LLMs y versionar prompts y skills | [carpeta](class_3_6_production/README.md) · [diapositivas](class_3_6_production/deck/deck_3_6_production.pptx) |
 | **5.1 — Modelos open source** | Correr LLMs abiertos localmente (Ollama), afinarlos (fine-tuning) y servirlos rápido (Groq) | [carpeta](class_5_1_opensource/README.md) · [demos interactivos](class_5_1_opensource/deck/serving_llm_a_escala.html) |
 | **5.2 — Imágenes** | Detección local (YOLO), entendimiento multimodal, generación (gpt-image-2), OCR semántico, parsing agéntico y RAG visual | [carpeta](class_5_2_imagenes/README.md) · [diapositivas](class_5_2_imagenes/deck/deck_5_2_imagenes.pptx) |
+| **5.3 — Voz** | La señal de audio, transcripción, síntesis dirigible, agentes de voz en cascada y modelos voice-to-voice | [carpeta](class_5_3_voz/README.md) · [diapositivas](class_5_3_voz/deck/deck_5_3_voz.pptx) |
 
 *(Se irán agregando más clases del diplomado.)*
 
@@ -85,6 +86,23 @@ ejecutable por separado (entorno `uv` propio).
 **Diapositivas:** [`deck_5_2_imagenes.pptx`](class_5_2_imagenes/deck/deck_5_2_imagenes.pptx)
 
 Más detalle (objetivos, prerrequisitos, entornos): [`class_5_2_imagenes/README.md`](class_5_2_imagenes/README.md).
+
+---
+
+## Clase 5.3 — Voz
+
+La voz de punta a punta, con un hilo conductor que se mide en cada lección: **cada vez que la
+voz pasa por texto se pierde información y se gana latencia.** Cuatro lecciones, cada una
+autocontenida y ejecutable por separado (entorno `uv` propio).
+
+1. **[Lección 1 · La señal de audio y su transcripción](class_5_3_voz/leccion1_audio_y_transcripcion/)** — muestreo y Nyquist, waveform y espectrograma, la firma de la voz (formantes), y transcripción con `gpt-transcribe`. Cierra degradando la señal con ruido: el modelo aguanta 0 dB sin errar, y al quebrarse **inventa** en vez de callar.
+2. **[Lección 2 · Síntesis de voz](class_5_3_voz/leccion2_sintesis_de_voz/)** — `gpt-4o-mini-tts` y el parámetro `instructions`: la misma frase **dirigida** de cuatro formas. Las 13 voces, ElevenLabs `eleven_v3` con acento y clonación, y latencias medidas (`eleven_flash_v2_5` es ~5× más rápido).
+3. **[Lección 3 · Agente de voz en cascada](class_5_3_voz/leccion3_agente_sandwich/)** — el método **sándwich**: STT → agente (`create_agent` de LangChain 1.x + búsqueda web) → TTS, con Gradio y micrófono. Presupuesto de latencia por capa, y por qué el modelo del medio se elige por latencia y no por ranking.
+4. **[Lección 4 · Voice-to-voice y tres frameworks](class_5_3_voz/leccion4_frameworks_de_voz/)** — `gpt-realtime-2.1` recibe audio y emite audio: la primera sílaba llega **~5× antes**. El mismo agente implementado sin framework, con **OpenAI Agents SDK**, con **Pipecat** (open source) y con **ElevenLabs Agents**, más la tabla de decisión.
+
+**Diapositivas:** [`deck_5_3_voz.pptx`](class_5_3_voz/deck/deck_5_3_voz.pptx)
+
+Más detalle (objetivos, prerrequisitos, entornos): [`class_5_3_voz/README.md`](class_5_3_voz/README.md).
 
 ---
 
