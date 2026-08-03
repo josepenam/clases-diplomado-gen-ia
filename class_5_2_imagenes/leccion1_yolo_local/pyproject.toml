@@ -5,6 +5,10 @@ description = "Detección y tracking de objetos en vivo con YOLO (ultralytics), 
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "ultralytics==8.4.113",
+    # Requerida por los trackers (ByteTrack/BoT-SORT) para el problema de asignación
+    # lineal. Ultralytics la trata como opcional y trata de instalarla sola con pip al
+    # primer `model.track()`, pero los entornos de uv no traen pip: hay que fijarla acá.
+    "lap==0.5.13",
 ]
 
 [tool.uv]
