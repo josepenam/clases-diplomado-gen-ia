@@ -10,7 +10,7 @@ Cada clase es autocontenida: su propio `README`, su entorno y sus lecciones paso
 | **3.5 — Deployment** | Llevar un prototipo de GenAI a producción como API | [carpeta](class_3_5_deployment/README.md) · [diapositivas](class_3_5_deployment/deck/deck_3_5_deployment.pptx) |
 | **3.6 — Producción** | Evaluar sistemas de LLMs y versionar prompts y skills | [carpeta](class_3_6_production/README.md) · [diapositivas](class_3_6_production/deck/deck_3_6_production.pptx) |
 | **5.1 — Modelos open source** | Correr LLMs abiertos localmente (Ollama), afinarlos (fine-tuning) y servirlos rápido (Groq) | [carpeta](class_5_1_opensource/README.md) · [demos interactivos](class_5_1_opensource/deck/serving_llm_a_escala.html) |
-| **5.3 — Imágenes** | Detección local (YOLO), entendimiento multimodal, generación (gpt-image-2), OCR semántico, parsing agéntico y RAG visual | [carpeta](class_5_3_imagenes/README.md) · [diapositivas](class_5_3_imagenes/deck/deck_5_3_imagenes.pptx) |
+| **5.2 — Imágenes** | Detección local (YOLO), entendimiento multimodal, generación (gpt-image-2), OCR semántico, parsing agéntico y RAG visual | [carpeta](class_5_2_imagenes/README.md) · [diapositivas](class_5_2_imagenes/deck/deck_5_2_imagenes.pptx) |
 
 *(Se irán agregando más clases del diplomado.)*
 
@@ -68,23 +68,23 @@ Más detalle (objetivos, prerrequisitos, entornos): [`class_5_1_opensource/READM
 
 ---
 
-## Clase 5.3 — Entendimiento y generación de imágenes
+## Clase 5.2 — Entendimiento y generación de imágenes
 
 La visión por computador de punta a punta: de la visión **clásica** (convoluciones, YOLO) a
 los **LLMs multimodales**, la **generación** de imágenes y el aterrizaje en **documentos**
 (OCR semántico, parsing agéntico y RAG visual). Seis lecciones, cada una autocontenida y
 ejecutable por separado (entorno `uv` propio).
 
-1. **[Lección 1 · YOLO local](class_5_3_imagenes/leccion1_yolo_local/)** — detección y tracking de objetos en vivo sobre la webcam (ultralytics + ByteTrack), 100% local y sin API keys.
-2. **[Lección 2 · Entendimiento de imágenes](class_5_3_imagenes/leccion2_vision_llm/)** — imágenes dentro de un `HumanMessage` de LangChain (URL y base64) contra GPT-5: describir, razonar, responder preguntas.
-3. **[Lección 3 · Generación de imágenes](class_5_3_imagenes/leccion3_generacion_imagenes/)** — GPT-5 orquesta `gpt-image-2` vía la Responses API (`bind_tools`); la imagen vuelve en base64 y queda en `outputs/`.
-4. **[Lección 4 · OCR semántico](class_5_3_imagenes/leccion4_ocr_semantico/)** — caso práctico: un formulario escaneado y manuscrito sale como JSON estructurado (Pydantic + `with_structured_output`).
-5. **[Lección 5 · Parsing agéntico](class_5_3_imagenes/leccion5_parsing_agentico/)** — un informe del Banco Central por tres niveles: `pypdf` (US$0), DIY visual con `gpt-5-mini`, y **LlamaParse v2** tier `fast` vs `agentic`. Cierra con el criterio volumen × complejidad × auditabilidad.
-6. **[Lección 6 · RAG visual](class_5_3_imagenes/leccion6_rag_visual/)** — buscar páginas por lo que se **ve**: embeddings multimodales (`gemini-embedding-2`) + similitud coseno en numpy, y GPT-5 responde mirando la página. El patrón ColPali en versión API, sin GPU.
+1. **[Lección 1 · YOLO local](class_5_2_imagenes/leccion1_yolo_local/)** — detección y tracking de objetos en vivo sobre la webcam (ultralytics + ByteTrack), 100% local y sin API keys.
+2. **[Lección 2 · Entendimiento de imágenes](class_5_2_imagenes/leccion2_vision_llm/)** — imágenes dentro de un `HumanMessage` de LangChain (URL y base64) contra GPT-5: describir, razonar, responder preguntas.
+3. **[Lección 3 · Generación de imágenes](class_5_2_imagenes/leccion3_generacion_imagenes/)** — GPT-5 orquesta `gpt-image-2` vía la Responses API (`bind_tools`); la imagen vuelve en base64 y queda en `outputs/`.
+4. **[Lección 4 · OCR semántico](class_5_2_imagenes/leccion4_ocr_semantico/)** — caso práctico: un formulario escaneado y manuscrito sale como JSON estructurado (Pydantic + `with_structured_output`).
+5. **[Lección 5 · Parsing agéntico](class_5_2_imagenes/leccion5_parsing_agentico/)** — un informe del Banco Central por tres niveles: `pypdf` (US$0), DIY visual con `gpt-5-mini`, y **LlamaParse v2** tier `fast` vs `agentic`. Cierra con el criterio volumen × complejidad × auditabilidad.
+6. **[Lección 6 · RAG visual](class_5_2_imagenes/leccion6_rag_visual/)** — buscar páginas por lo que se **ve**: embeddings multimodales (`gemini-embedding-2`) + similitud coseno en numpy, y GPT-5 responde mirando la página. El patrón ColPali en versión API, sin GPU.
 
-**Diapositivas:** [`deck_5_3_imagenes.pptx`](class_5_3_imagenes/deck/deck_5_3_imagenes.pptx)
+**Diapositivas:** [`deck_5_2_imagenes.pptx`](class_5_2_imagenes/deck/deck_5_2_imagenes.pptx)
 
-Más detalle (objetivos, prerrequisitos, entornos): [`class_5_3_imagenes/README.md`](class_5_3_imagenes/README.md).
+Más detalle (objetivos, prerrequisitos, entornos): [`class_5_2_imagenes/README.md`](class_5_2_imagenes/README.md).
 
 ---
 

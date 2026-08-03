@@ -1,0 +1,18 @@
+[project]
+name = "leccion6-rag-visual"
+version = "0.1.0"
+description = "RAG visual: recuperar páginas de un PDF por lo que se ve, con embeddings multimodales."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "google-genai==2.16.0",
+    "pypdfium2==5.12.1",
+    "numpy==2.5.1",
+    "pillow==12.3.0",
+    "langchain-openai==1.3.5",
+    "langchain-core==1.4.9",
+    "python-dotenv==1.2.2",
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+package = false
