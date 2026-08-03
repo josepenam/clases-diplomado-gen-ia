@@ -25,6 +25,10 @@ uv-cache/
 **/outputs/*
 !**/outputs/.gitkeep
 
+# --- Exportaciones del deck: derivadas del .pptx, no se versionan ---
+# (no afecta a los PDF de lectura del curso, que no se llaman deck_*)
+**/deck/deck_*.pdf
+
 # --- OS / Office ---
 .DS_Store
 Thumbs.db
