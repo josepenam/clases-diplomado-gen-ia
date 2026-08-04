@@ -36,7 +36,45 @@ consulta el stock con una herramienta— y los cuatro importan el mismo dominio 
 
 El notebook [`frameworks_de_voz.ipynb`](frameworks_de_voz.ipynb) es la **guía**: explica el
 salto de arquitectura, mide la diferencia, corre los modos de verificación de los cuatro
-scripts y sostiene la tabla de decisión. No abre el micrófono.
+scripts, desarma la mecánica interna de cada framework y sostiene la tabla de decisión. No
+abre el micrófono.
+
+## La comparación estructural
+
+La mitad del notebook (una sección propia, *"Cómo funciona cada uno, por dentro"*) responde
+a la pregunta que ninguna tabla de features contesta: **¿contra qué vocabulario programas?**
+Los números se cuentan **en vivo** por introspección de los paquetes instalados, así que no
+envejecen con la lección:
+
+| Framework | Vocabulario | Qué es |
+|---|---|---|
+| API Realtime a pelo | **56** eventos (11 envías, 45 recibes) | protocolo de cable |
+| OpenAI Agents SDK | **15** eventos | una *reducción* de los 56, con `raw_model_event` como escotilla |
+| ElevenLabs Agents | **9** eventos (+4 mensajes) | y solo **2** te obligan a actuar (`ping`, `client_tool_call`) |
+| Pipecat | **129** frames (45 System / 32 Data / 43 Control / 9 base) | no es un protocolo: es un **bus interno** |
+
+Y desarrolla, para cada uno:
+
+- **Pipecat** — las tres familias de frames y por qué se planifican distinto (un
+  `InterruptionFrame` es `SystemFrame` y por eso se adelanta a 3 s de audio ya encolado); las
+  dos direcciones (`DOWNSTREAM`/`UPSTREAM`); el ciclo de vida (`StartFrame` → corriendo →
+  `EndFrame`); la regla de que **los procesadores no consumen los frames, los pasan**; el
+  turno completo etapa por etapa con los frames que cada una emite; y la interrupción como
+  `broadcast_interruption()`, que difunde el frame **arriba y abajo** del bus.
+- **La API a pelo** — los 45 eventos del servidor agrupados por familia, el turno completo
+  anotado evento por evento, el ida y vuelta de la herramienta en dos mensajes (y por qué
+  olvidar el segundo `response.create` deja al agente mudo, sin error), y `server_vad` vs
+  `semantic_vad`.
+- **Agents SDK** — los 15 eventos con su significado, y sobre todo **lo que no aparece** en
+  la lista porque el SDK lo absorbió.
+- **ElevenLabs** — los 9 eventos, el orden real de un turno, y `agent_response_correction`.
+
+Cierra con **el mismo problema a cuatro alturas**: de quién es el turno, qué oyó realmente el
+usuario al interrumpir, y el ida y vuelta de la herramienta. El caso de la interrupción es el
+más ilustrativo — mismo problema físico (el audio en el buffer no es el audio que se oyó) y
+cuatro tratos distintos: a pelo lo reconcilias tú con `conversation.item.truncate`, el SDK te
+avisa con `audio_interrupted`, Pipecat difunde un frame por el bus, y ElevenLabs simplemente
+te manda el texto corregido.
 
 ## El hallazgo central
 
