@@ -1,4 +1,4 @@
-"""Nivel 0: la API Realtime a pelo, sin framework.
+"""Nivel 0: la API Realtime directa, sin framework.
 
 Este script existe para responder una pregunta concreta: **¿qué están haciendo por mí los
 frameworks?** Acá no hay abstracciones — se abre un WebSocket a `/v1/realtime`, se configura

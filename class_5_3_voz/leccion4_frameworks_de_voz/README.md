@@ -29,7 +29,7 @@ consulta el stock con una herramienta— y los cuatro importan el mismo dominio 
 
 | Archivo | Framework | Qué representa | Modo de verificación |
 |---|---|---|---|
-| [`nivel0_websocket_crudo.py`](nivel0_websocket_crudo.py) | ninguno | La API a pelo: protocolo, base64 y bucle de eventos a mano. | `--smoke` |
+| [`nivel0_websocket_crudo.py`](nivel0_websocket_crudo.py) | ninguno | La API directa: protocolo, base64 y bucle de eventos a mano. | `--smoke` |
 | [`agente_openai.py`](agente_openai.py) | **OpenAI Agents SDK** | `RealtimeAgent` con los mismos primitivos que tus agentes de texto. | `--smoke` |
 | [`agente_pipecat.py`](agente_pipecat.py) | **Pipecat** (Daily, BSD) | El pipeline explícito; implementa **las dos** arquitecturas. | `--check` |
 | [`agente_elevenlabs.py`](agente_elevenlabs.py) | **ElevenLabs Agents** | El agente vive en la plataforma, no en tu código. | `--check` |
@@ -45,7 +45,7 @@ mensaje: dónde vive la lógica. Cada uno lleva al pie los tips medidos en la cl
 
 | | |
 |---|---|
-| [`diagrama_0_websocket_crudo.png`](diagramas/diagrama_0_websocket_crudo.png) | La API a pelo: 56 eventos, todo lo escribes tú. |
+| [`diagrama_0_websocket_crudo.png`](diagramas/diagrama_0_websocket_crudo.png) | La API directa: 56 eventos, todo lo escribes tú. |
 | [`diagrama_1_openai_agents_sdk.png`](diagramas/diagrama_1_openai_agents_sdk.png) | El cliente semántico: 15 eventos, el audio local sigue siendo tuyo. |
 | [`diagrama_2_pipecat.png`](diagramas/diagrama_2_pipecat.png) | El bus de frames: el pipeline completo vive en tu proceso. |
 | [`diagrama_3_elevenlabs_agents.png`](diagramas/diagrama_3_elevenlabs_agents.png) | La plataforma: el agente vive en la nube; tu proceso presta el micrófono. |
@@ -66,7 +66,7 @@ envejecen con la lección:
 
 | Framework | Vocabulario | Qué es |
 |---|---|---|
-| API Realtime a pelo | **56** eventos (11 envías, 45 recibes) | protocolo de cable |
+| API Realtime directa | **56** eventos (11 envías, 45 recibes) | protocolo de cable |
 | OpenAI Agents SDK | **15** eventos | una *reducción* de los 56, con `raw_model_event` como escotilla |
 | ElevenLabs Agents | **9** eventos (+4 mensajes) | y solo **2** te obligan a actuar (`ping`, `client_tool_call`) |
 | Pipecat | **129** frames (45 System / 32 Data / 43 Control / 9 base) | no es un protocolo: es un **bus interno** |
@@ -79,7 +79,7 @@ Y desarrolla, para cada uno:
   `EndFrame`); la regla de que **los procesadores no consumen los frames, los pasan**; el
   turno completo etapa por etapa con los frames que cada una emite; y la interrupción como
   `broadcast_interruption()`, que difunde el frame **arriba y abajo** del bus.
-- **La API a pelo** — los 45 eventos del servidor agrupados por familia, el turno completo
+- **La API directa** — los 45 eventos del servidor agrupados por familia, el turno completo
   anotado evento por evento, el ida y vuelta de la herramienta en dos mensajes (y por qué
   olvidar el segundo `response.create` deja al agente mudo, sin error), y `server_vad` vs
   `semantic_vad`.
@@ -90,7 +90,7 @@ Y desarrolla, para cada uno:
 Cierra con **el mismo problema a cuatro alturas**: de quién es el turno, qué oyó realmente el
 usuario al interrumpir, y el ida y vuelta de la herramienta. El caso de la interrupción es el
 más ilustrativo — mismo problema físico (el audio en el buffer no es el audio que se oyó) y
-cuatro tratos distintos: a pelo lo reconcilias tú con `conversation.item.truncate`, el SDK te
+cuatro tratos distintos: con la API directa lo reconcilias tú con `conversation.item.truncate`, el SDK te
 avisa con `audio_interrupted`, Pipecat difunde un frame por el bus, y ElevenLabs simplemente
 te manda el texto corregido.
 
@@ -224,7 +224,17 @@ uv run python salida_fluida.py
 
 ## Trampas documentadas
 
-Tres cosas que cuestan una tarde si nadie las avisa:
+Cuatro cosas que cuestan una tarde si nadie las avisa:
+
+- **Las tasas de entrada no son negociables, y chocan entre sí.** La API Realtime **rechaza**
+  PCM de entrada bajo 24 kHz (`Expected a value >= 24000`), pipecat **no resamplea la
+  entrada** (manda los bytes del micrófono tal cual al WebSocket), y Silero —el VAD local—
+  solo corre a 16 u 8 kHz. Consecuencia: en modo `realtime` el pipeline va a 24 kHz **sin**
+  VAD local (el turno lo decide el servidor con `semantic_vad`, y el servicio difunde los
+  `UserStarted/StoppedSpeakingFrame` por el bus); en modo `cascada`, entrada a 16 kHz con
+  Silero. Mezclarlos revienta al arrancar con
+  `Silero VAD sample rate needs to be 16000 or 8000`. La salida sí puede ser siempre 24 kHz,
+  porque `base_output` sí resamplea.
 
 - **`nltk` vs. `.venv` dentro del proyecto.** Pipecat importa `nltk`, que trae un hook de
   seguridad que bloquea cualquier módulo cuyo origen esté *dentro del directorio de trabajo*.

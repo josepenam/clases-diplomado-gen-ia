@@ -88,11 +88,23 @@ async def manejar_consultar_stock(params: FunctionCallParams) -> None:
 # Armado del pipeline
 # ---------------------------------------------------------------------------
 
-TASA_AUDIO = 24_000  # la API Realtime trabaja a 24 kHz en ambos sentidos
+# Las tasas de audio NO son negociables, y son distintas por modo:
+# - La API Realtime solo acepta PCM de entrada a 24 kHz (verificado: un session.update
+#   con rate=16000 devuelve "Expected a value >= 24000"). Y pipecat NO resamplea la
+#   entrada — manda los bytes del micrófono tal cual al WebSocket.
+# - Silero (el VAD local) solo corre a 16 u 8 kHz.
+# Consecuencia: en realtime el audio va a 24 kHz y SIN VAD local — el turno lo decide
+# el servidor (semantic_vad) y el propio servicio difunde los UserStarted/Stopped-
+# SpeakingFrame y la interrupción. En cascada, entrada a 16 kHz con Silero.
+TASA_REALTIME = 24_000
+TASA_CASCADA_IN = 16_000
+TASA_SALIDA = 24_000  # la salida siempre puede ser 24 kHz: base_output sí resamplea
 
 
 def construir(modo: str) -> tuple[Pipeline, PipelineWorker]:
     """Devuelve el pipeline y su worker para el modo pedido."""
+    tasa_entrada = TASA_REALTIME if modo == "realtime" else TASA_CASCADA_IN
+
     # `transporte_local_fluido` es el LocalAudioTransport de Pipecat con la salida
     # pasada por un ring buffer. Sin eso el audio sale a saltos: el transporte original
     # escribe trozos de 40 ms con write() bloqueante y el dispositivo se queda seco entre
@@ -101,20 +113,24 @@ def construir(modo: str) -> tuple[Pipeline, PipelineWorker]:
         LocalAudioTransportParams(
             audio_in_enabled=True,
             audio_out_enabled=True,
-            audio_in_sample_rate=TASA_AUDIO,
-            audio_out_sample_rate=TASA_AUDIO,
+            audio_in_sample_rate=tasa_entrada,
+            audio_out_sample_rate=TASA_SALIDA,
         )
     )
 
     herramientas = ToolsSchema(standard_tools=[ESQUEMA_STOCK])
     contexto = LLMContext(messages=[], tools=herramientas)
 
-    # El VAD decide cuándo terminó de hablar el usuario. Silero corre **local**: no manda
-    # el audio a ningún servidor para detectar silencios.
-    agregador_usuario, agregador_asistente = LLMContextAggregatorPair(
-        contexto,
-        user_params=LLMUserAggregatorParams(vad_analyzer=SileroVADAnalyzer()),
-    )
+    if modo == "realtime":
+        # SIN vad_analyzer: los eventos de turno vienen del servidor (ver arriba).
+        agregador_usuario, agregador_asistente = LLMContextAggregatorPair(contexto)
+    else:
+        # El VAD decide cuándo terminó de hablar el usuario, para cortar el turno que
+        # va al STT. Silero corre **local**: no manda audio a ningún servidor.
+        agregador_usuario, agregador_asistente = LLMContextAggregatorPair(
+            contexto,
+            user_params=LLMUserAggregatorParams(vad_analyzer=SileroVADAnalyzer()),
+        )
 
     if modo == "realtime":
         from pipecat.services.openai.realtime.events import (
@@ -188,8 +204,8 @@ def construir(modo: str) -> tuple[Pipeline, PipelineWorker]:
         params=PipelineParams(
             enable_metrics=True,
             enable_usage_metrics=True,
-            audio_in_sample_rate=TASA_AUDIO,
-            audio_out_sample_rate=TASA_AUDIO,
+            audio_in_sample_rate=tasa_entrada,
+            audio_out_sample_rate=TASA_SALIDA,
         ),
     )
     return pipeline, worker

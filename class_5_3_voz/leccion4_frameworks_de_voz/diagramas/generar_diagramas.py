@@ -93,7 +93,7 @@ def tips(ax, items):
 
 def d0():
     fig, ax = lienzo(
-        "Nivel 0 · la API Realtime a pelo",
+        "Nivel 0 · la API Realtime directa",
         "nivel0_websocket_crudo.py — sin framework: el protocolo de cable, a mano",
         "vocabulario: 56 eventos\n(11 envías · 45 recibes)",
     )
@@ -216,7 +216,7 @@ def d2():
     zona(ax, 81, 17, 17, 70.5, "NUBE", AMBAR_F, AMBAR_B)
 
     y = 68
-    caja(ax, 12, y, 16, 12, "transport\n.input()\n+ VAD Silero\n(local)", fs=9.3)
+    caja(ax, 12, y, 16, 12, "transport\n.input()\n(24 kHz: lo exige\nla API Realtime)", fs=9.3)
     caja(ax, 30, y, 15, 10, "user_\naggregator\n(contexto)", fs=9.3)
     caja(ax, 49, y, 18, 12, "OpenAIRealtime\nLLMService\n(voice-to-voice)", fs=9.3)
     caja(ax, 68.5, y, 15, 12, "SalidaLocal\nFluida\n(jitter buffer)", fs=9.3, ec=VERDE)
@@ -244,7 +244,7 @@ def d2():
          "cada etapa se resetea sola — por eso interrumpir funciona sin escribir nada",
          fs=9.6, ec=GRIS)
     caja(ax, 40, 23, 70, 8.5,
-         "modo --cascada: la MISMA lista + 2 etapas  →  "
+         "modo --cascada: la MISMA lista + 2 etapas y el VAD local (Silero, 16 kHz)  →  "
          "input → STT → contexto → LLM → TTS → output\n"
          "(cambiar de arquitectura o de proveedor = editar la lista)",
          fs=9.6, ec=AZUL_B)
@@ -252,8 +252,8 @@ def d2():
     tips(ax, [
         "nltk bloquea imports con el .venv dentro del proyecto (convención de uv) → NLTK_DISABLE_IMPORT_SECURITY=1 antes de importar.",
         "La salida local hace underflow en el 100% de los writes (medido: 310/310) → transporte_local_fluido() con ring buffer: 0.",
-        "El VAD (Silero) corre EN TU MÁQUINA: detectar si estás hablando no manda audio a ningún servidor.",
-        "Fija las tasas explícitas (24 kHz para la API Realtime): los defaults de PipelineParams son 16 kHz de entrada.",
+        "El VAD local (Silero) es del modo cascada y corre EN TU MÁQUINA; en realtime el turno lo decide el servidor (semantic_vad).",
+        "Tasas no negociables: la API Realtime rechaza entrada bajo 24 kHz y Silero solo corre a 16/8 kHz — realtime: 24 kHz sin VAD local; cascada: 16 kHz.",
     ])
     fig.savefig(SALIDA / "diagrama_2_pipecat.png", bbox_inches="tight", facecolor="white")
     plt.close(fig)
