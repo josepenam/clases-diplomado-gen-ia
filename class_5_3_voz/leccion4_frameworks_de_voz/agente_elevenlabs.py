@@ -20,6 +20,7 @@ Uso:
 """
 
 import argparse
+import json
 import os
 import signal
 import sys
@@ -92,11 +93,14 @@ def armar_herramientas() -> ClientTools:
     """Registra la función local que la plataforma va a invocar."""
     herramientas = ClientTools()
 
-    def manejar(parametros: dict):
+    def manejar(parametros: dict) -> str:
         nombre = parametros.get("nombre_producto", "")
         resultado = consultar_stock(nombre)
         print(f"   🔧 consultar_stock({nombre!r}) → {resultado}")
-        return resultado
+        # El `result` del client_tool_result debe ser un STRING: si devuelves el
+        # dict tal cual, el orquestador cierra el WebSocket con
+        # 1008 "Invalid message … result: Input should be a valid string".
+        return json.dumps(resultado, ensure_ascii=False)
 
     herramientas.register("consultar_stock", manejar)
     return herramientas

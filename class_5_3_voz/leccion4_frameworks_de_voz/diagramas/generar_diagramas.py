@@ -311,7 +311,7 @@ def d3():
     tips(ax, [
         "Un agente en ESPAÑOL debe usar eleven_flash_v2_5 o turbo — la API rechaza los demás modelos de TTS.",
         "En plan free solo funcionan voces premade; las de biblioteca (p. ej. acento chileno) devuelven 402 paid_plan_required.",
-        "La herramienta se declara en la CONFIG del agente (la plataforma decide cuándo llamarla); tu proceso solo la ejecuta.",
+        "La herramienta se declara en la CONFIG del agente; tu proceso la ejecuta y devuelve el result como STRING (un dict cierra el WS con 1008).",
         "El script crea el agente al entrar y lo BORRA al salir; --conservar lo deja para inspeccionarlo en el dashboard.",
     ])
     fig.savefig(SALIDA / "diagrama_3_elevenlabs_agents.png", bbox_inches="tight",

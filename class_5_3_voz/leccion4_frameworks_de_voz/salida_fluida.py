@@ -138,12 +138,26 @@ class ReproductorFluido:
             self._sonando = False  # vuelve a pre-bufferear en el turno siguiente
 
     def detener(self) -> None:
-        if self._stream is not None:
-            self._stream.stop_stream()
-            self._stream.close()
-            self._stream = None
+        """Cierra el stream. Idempotente y tolerante al teardown.
+
+        Tras un error de conexión, el SDK del proveedor puede llamar a stop() más de
+        una vez y desde threads distintos, con PortAudio ya a medio morir — en macOS
+        eso asoma como ``OSError -9986`` o ``PaMacCore '!obj'``. Cerrar lo que se
+        pueda y seguir es lo correcto acá: estamos apagando de todas formas.
+        """
+        stream, self._stream = self._stream, None
+        if stream is not None:
+            for cerrar in (stream.stop_stream, stream.close):
+                try:
+                    cerrar()
+                except Exception:
+                    pass
         if self._propietario_pyaudio:
-            self._py_audio.terminate()
+            self._propietario_pyaudio = False
+            try:
+                self._py_audio.terminate()
+            except Exception:
+                pass
 
 
 # ----------------------------------------------------------------------

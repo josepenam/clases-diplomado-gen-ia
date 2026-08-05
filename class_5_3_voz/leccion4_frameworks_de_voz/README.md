@@ -224,7 +224,7 @@ uv run python salida_fluida.py
 
 ## Trampas documentadas
 
-Cuatro cosas que cuestan una tarde si nadie las avisa:
+Cinco cosas que cuestan una tarde si nadie las avisa:
 
 - **Las tasas de entrada no son negociables, y chocan entre sí.** La API Realtime **rechaza**
   PCM de entrada bajo 24 kHz (`Expected a value >= 24000`), pipecat **no resamplea la
@@ -248,6 +248,11 @@ Cuatro cosas que cuestan una tarde si nadie las avisa:
 - **Dos restricciones de ElevenLabs Agents.** Un agente en español **debe** usar
   `eleven_flash_v2_5` o `turbo` (la API rechaza los demás), y hay que usar una voz *premade*
   porque las de biblioteca requieren plan pago.
+- **El `result` de una client tool debe ser un STRING.** Si el handler devuelve un dict, el
+  orquestador cierra el WebSocket con `1008 (policy violation) … result: Input should be a
+  valid string` — a mitad de conversación, justo cuando el agente iba a responder con el dato.
+  Serialízalo: `return json.dumps(resultado, ensure_ascii=False)`. Verificado headless con una
+  conversación por texto (`user_message` → `client_tool_call` → `client_tool_result`).
 
 ## Referencias
 
