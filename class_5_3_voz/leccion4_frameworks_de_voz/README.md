@@ -37,6 +37,21 @@ consulta el stock con una herramienta— y los cuatro importan el mismo dominio 
 Y una pieza compartida: [`salida_fluida.py`](salida_fluida.py), el reproductor con *jitter
 buffer* que los cuatro usan (ver "El audio salía a saltos" más abajo).
 
+### Diagramas de operación
+
+En [`diagramas/`](diagramas/) hay un diagrama por método, con el mismo lenguaje visual para
+que sean comparables — el tamaño relativo de las zonas (tu proceso / la nube) **es** el
+mensaje: dónde vive la lógica. Cada uno lleva al pie los tips medidos en la clase.
+
+| | |
+|---|---|
+| [`diagrama_0_websocket_crudo.png`](diagramas/diagrama_0_websocket_crudo.png) | La API a pelo: 56 eventos, todo lo escribes tú. |
+| [`diagrama_1_openai_agents_sdk.png`](diagramas/diagrama_1_openai_agents_sdk.png) | El cliente semántico: 15 eventos, el audio local sigue siendo tuyo. |
+| [`diagrama_2_pipecat.png`](diagramas/diagrama_2_pipecat.png) | El bus de frames: el pipeline completo vive en tu proceso. |
+| [`diagrama_3_elevenlabs_agents.png`](diagramas/diagrama_3_elevenlabs_agents.png) | La plataforma: el agente vive en la nube; tu proceso presta el micrófono. |
+
+Se regeneran con `uv run --with matplotlib python diagramas/generar_diagramas.py`.
+
 El notebook [`frameworks_de_voz.ipynb`](frameworks_de_voz.ipynb) es la **guía**: explica el
 salto de arquitectura, mide la diferencia, corre los modos de verificación de los cuatro
 scripts, desarma la mecánica interna de cada framework y sostiene la tabla de decisión. No
