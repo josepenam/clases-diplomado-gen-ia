@@ -36,9 +36,8 @@ if not os.environ.get("ELEVENLABS_API_KEY") and os.environ.get("ELEVEN_API_KEY")
 
 from elevenlabs.client import ElevenLabs  # noqa: E402
 from elevenlabs.conversational_ai.conversation import ClientTools, Conversation  # noqa: E402
-from elevenlabs.conversational_ai.default_audio_interface import (  # noqa: E402
-    DefaultAudioInterface,
-)
+
+from salida_fluida import InterfazAudioFluida  # noqa: E402
 
 # Voz "premade": funciona en el plan gratis. Las voces de la biblioteca de la comunidad
 # —incluidas las de acento chileno— requieren plan pago (ver la lección 2).
@@ -109,7 +108,10 @@ def conversar(cliente: ElevenLabs, agent_id: str) -> None:
         agent_id,
         # El agente es nuestro y la llave está en el entorno, así que la sesión va firmada.
         requires_auth=True,
-        audio_interface=DefaultAudioInterface(),  # micrófono y parlantes del sistema
+        # `DefaultAudioInterface` de ElevenLabs ya usa cola y thread propio, pero escribe
+        # al dispositivo con write() bloqueante sobre un buffer chico (62,5 ms) y se queda
+        # corta cuando el proceso se retrasa. `InterfazAudioFluida` le pone un ring buffer.
+        audio_interface=InterfazAudioFluida(),  # micrófono y parlantes del sistema
         client_tools=armar_herramientas(),
         callback_user_transcript=lambda texto: print(f"🧑 tú   : {texto}"),
         callback_agent_response=lambda texto: print(f"🤖 Luis : {texto}"),

@@ -116,11 +116,17 @@ async def smoke() -> int:
 async def conversar() -> int:
     import pyaudio
 
+    from salida_fluida import ReproductorFluido
+
     audio = pyaudio.PyAudio()
     entrada = audio.open(format=pyaudio.paInt16, channels=1, rate=TASA_MUESTREO,
                          input=True, frames_per_buffer=TAMANO_BLOQUE)
-    salida = audio.open(format=pyaudio.paInt16, channels=1, rate=TASA_MUESTREO,
-                        output=True, frames_per_buffer=TAMANO_BLOQUE)
+
+    # La salida NO se escribe directo al dispositivo: los deltas de la API llegan a
+    # ráfagas (medimos huecos de hasta 1,3 s) y escribirlos uno a uno deja al parlante
+    # seco entre trozo y trozo. El ReproductorFluido los amortigua. Ver salida_fluida.py.
+    reproductor = ReproductorFluido(tasa=TASA_MUESTREO, py_audio=audio)
+    reproductor.iniciar()
 
     print(f"▶ {MODELO} · voz {VOZ} · habla cuando quieras (Ctrl-C para salir)\n")
 
@@ -141,9 +147,11 @@ async def conversar() -> int:
         async for evento in sesion:
             tipo = evento.type
             if tipo == "audio":
-                await asyncio.to_thread(salida.write, evento.audio.data)
+                reproductor.escribir(evento.audio.data)  # no bloquea
             elif tipo == "audio_interrupted":
-                # El usuario habló encima: el servidor ya cortó su turno.
+                # El usuario habló encima: el servidor ya cortó su turno, y acá botamos
+                # el audio que quedaba en el buffer para no seguir hablando encima suyo.
+                reproductor.interrumpir()
                 print("   ✋ (interrumpido)")
             elif tipo == "tool_start":
                 pass  # el print lo hace la herramienta
@@ -164,10 +172,13 @@ async def conversar() -> int:
     except (KeyboardInterrupt, asyncio.CancelledError):
         print("\n▶ Cerrando…")
     finally:
-        for flujo in (entrada, salida):
-            flujo.stop_stream()
-            flujo.close()
+        entrada.stop_stream()
+        entrada.close()
+        reproductor.detener()
         audio.terminate()
+        if reproductor.underruns:
+            print(f"(el buffer se secó {reproductor.underruns} veces — "
+                  "sube prebuffer_ms si se oyó a saltos)")
     return 0
 
 

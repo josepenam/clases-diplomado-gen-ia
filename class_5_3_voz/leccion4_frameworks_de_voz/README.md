@@ -34,6 +34,9 @@ consulta el stock con una herramienta— y los cuatro importan el mismo dominio 
 | [`agente_pipecat.py`](agente_pipecat.py) | **Pipecat** (Daily, BSD) | El pipeline explícito; implementa **las dos** arquitecturas. | `--check` |
 | [`agente_elevenlabs.py`](agente_elevenlabs.py) | **ElevenLabs Agents** | El agente vive en la plataforma, no en tu código. | `--check` |
 
+Y una pieza compartida: [`salida_fluida.py`](salida_fluida.py), el reproductor con *jitter
+buffer* que los cuatro usan (ver "El audio salía a saltos" más abajo).
+
 El notebook [`frameworks_de_voz.ipynb`](frameworks_de_voz.ipynb) es la **guía**: explica el
 salto de arquitectura, mide la diferencia, corre los modos de verificación de los cuatro
 scripts, desarma la mecánica interna de cada framework y sostiene la tabla de decisión. No
@@ -161,6 +164,48 @@ uv run python -m ipykernel install --user \
 
 uv run --with jupyterlab jupyter lab frameworks_de_voz.ipynb
 ```
+
+## El audio salía a saltos
+
+Probando los agentes con audífonos, el audio se oía **cortado**, con un chasquido casi
+continuo. No era la red ni el modelo: era la reproducción local.
+
+Tanto el `LocalAudioTransport` de Pipecat como el `DefaultAudioInterface` de ElevenLabs
+escriben al dispositivo con `stream.write()` **bloqueante**, entregando trozos cortos (40 ms
+en Pipecat) uno tras otro. Eso deja al parlante casi sin cojín, y en un proceso que además
+corre VAD, STT, LLM y TTS en el mismo event loop, el productor se retrasa constantemente unos
+milisegundos. Cada retraso es un microcorte.
+
+Se mide sin oído, con la señal que PyAudio expone para esto
+(`stream.write(..., exception_on_underflow=True)`), interceptando el camino real de Pipecat:
+
+| Ruta | Resultado |
+|---|---|
+| Original (write bloqueante, trozos de 40 ms) | 310 writes · **310 underflows de PortAudio** (el 100%) |
+| Con jitter buffer (ring buffer + callback) | 266 callbacks · **0 underflows** |
+
+El arreglo, en [`salida_fluida.py`](salida_fluida.py), es el estándar de audio en tiempo real:
+**desacoplar** la llegada de los datos de su reproducción. El dispositivo pide audio cuando lo
+necesita y se sirve de un ring buffer; el productor solo deposita y nunca bloquea. Trae:
+
+- `ReproductorFluido` — el ring buffer + stream de callback, usable por sí solo.
+- `transporte_local_fluido()` — el `LocalAudioTransport` de Pipecat con la salida reemplazada.
+- `InterfazAudioFluida()` — lo mismo para el `Conversation` de ElevenLabs.
+
+Funciona porque los deltas llegan **a ráfagas** (huecos medidos de hasta 1,3 s) pero el
+servidor entrega en total a ~1,9× tiempo real: con 200 ms de pre-buffer, el buffer acumula
+ventaja en las ráfagas y la gasta en los huecos.
+
+Para comprobarlo en tu máquina — reproduce la misma frase por las dos rutas:
+
+```bash
+uv run python salida_fluida.py
+```
+
+> Esto **no es un defecto de Pipecat**: `LocalAudioTransport` está pensado para desarrollo, y
+> en producción el audio se reproduce en el navegador o el teléfono, donde WebRTC ya trae su
+> propio jitter buffer. La lección es general: **nunca escribas audio de red directo al
+> dispositivo.**
 
 ## Trampas documentadas
 

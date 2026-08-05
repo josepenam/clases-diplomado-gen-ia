@@ -47,11 +47,9 @@ from pipecat.processors.aggregators.llm_response_universal import (  # noqa: E40
     LLMUserAggregatorParams,
 )
 from pipecat.services.llm_service import FunctionCallParams  # noqa: E402
-from pipecat.transports.local.audio import (  # noqa: E402
-    LocalAudioTransport,
-    LocalAudioTransportParams,
-)
+from pipecat.transports.local.audio import LocalAudioTransportParams  # noqa: E402
 
+from salida_fluida import transporte_local_fluido  # noqa: E402
 from tienda import INSTRUCCIONES, consultar_stock  # noqa: E402
 
 MODELO_REALTIME = "gpt-realtime-2.1"
@@ -90,10 +88,22 @@ async def manejar_consultar_stock(params: FunctionCallParams) -> None:
 # Armado del pipeline
 # ---------------------------------------------------------------------------
 
+TASA_AUDIO = 24_000  # la API Realtime trabaja a 24 kHz en ambos sentidos
+
+
 def construir(modo: str) -> tuple[Pipeline, PipelineWorker]:
     """Devuelve el pipeline y su worker para el modo pedido."""
-    transporte = LocalAudioTransport(
-        LocalAudioTransportParams(audio_in_enabled=True, audio_out_enabled=True)
+    # `transporte_local_fluido` es el LocalAudioTransport de Pipecat con la salida
+    # pasada por un ring buffer. Sin eso el audio sale a saltos: el transporte original
+    # escribe trozos de 40 ms con write() bloqueante y el dispositivo se queda seco entre
+    # casi cada trozo (medido: underflow en el 100% de los writes). Ver salida_fluida.py.
+    transporte = transporte_local_fluido(
+        LocalAudioTransportParams(
+            audio_in_enabled=True,
+            audio_out_enabled=True,
+            audio_in_sample_rate=TASA_AUDIO,
+            audio_out_sample_rate=TASA_AUDIO,
+        )
     )
 
     herramientas = ToolsSchema(standard_tools=[ESQUEMA_STOCK])
@@ -175,7 +185,12 @@ def construir(modo: str) -> tuple[Pipeline, PipelineWorker]:
     pipeline = Pipeline(etapas)
     worker = PipelineWorker(
         pipeline,
-        params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
+        params=PipelineParams(
+            enable_metrics=True,
+            enable_usage_metrics=True,
+            audio_in_sample_rate=TASA_AUDIO,
+            audio_out_sample_rate=TASA_AUDIO,
+        ),
     )
     return pipeline, worker
 

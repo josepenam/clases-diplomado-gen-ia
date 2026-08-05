@@ -99,16 +99,15 @@ async def responder_herramienta(ws, call_id: str, argumentos_json: str) -> None:
     await ws.send(json.dumps({"type": "response.create"}))
 
 
-async def manejar_eventos(ws, escribir_audio=None) -> None:
+async def manejar_eventos(ws, escribir_audio=None, interrumpir=None) -> None:
     """Bucle de eventos. Esto es lo que un framework te esconde."""
     async for crudo in ws:
         evento = json.loads(crudo)
         tipo = evento["type"]
 
         if tipo == "response.output_audio.delta":
-            trozo = base64.b64decode(evento["delta"])
             if escribir_audio:
-                await asyncio.to_thread(escribir_audio, trozo)
+                escribir_audio(base64.b64decode(evento["delta"]))
 
         elif tipo == "response.output_audio_transcript.done":
             print(f"🤖 Luis : {evento['transcript']}")
@@ -120,6 +119,9 @@ async def manejar_eventos(ws, escribir_audio=None) -> None:
             await responder_herramienta(ws, evento["call_id"], evento["arguments"])
 
         elif tipo == "input_audio_buffer.speech_started":
+            # Botamos el audio pendiente: el servidor ya cortó su turno.
+            if interrumpir:
+                interrumpir()
             print("   ✋ (hablaste: se interrumpe)")
 
         elif tipo == "error":
@@ -163,11 +165,14 @@ async def smoke() -> int:
 async def conversar() -> int:
     import pyaudio
 
+    from salida_fluida import ReproductorFluido
+
     audio = pyaudio.PyAudio()
     entrada = audio.open(format=pyaudio.paInt16, channels=1, rate=TASA_MUESTREO,
                          input=True, frames_per_buffer=TAMANO_BLOQUE)
-    salida = audio.open(format=pyaudio.paInt16, channels=1, rate=TASA_MUESTREO,
-                        output=True, frames_per_buffer=TAMANO_BLOQUE)
+    # Los deltas llegan a ráfagas; escribirlos directo al dispositivo suena a saltos.
+    reproductor = ReproductorFluido(tasa=TASA_MUESTREO, py_audio=audio)
+    reproductor.iniciar()
 
     print(f"▶ {MODELO} sin framework · habla cuando quieras (Ctrl-C para salir)\n")
 
@@ -186,11 +191,14 @@ async def conversar() -> int:
                 }))
 
         try:
-            await asyncio.gather(enviar(), manejar_eventos(ws, salida.write))
+            await asyncio.gather(
+                enviar(),
+                manejar_eventos(ws, reproductor.escribir, reproductor.interrumpir),
+            )
         finally:
-            for flujo in (entrada, salida):
-                flujo.stop_stream()
-                flujo.close()
+            entrada.stop_stream()
+            entrada.close()
+            reproductor.detener()
             audio.terminate()
     return 0
 
