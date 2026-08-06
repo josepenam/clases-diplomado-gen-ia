@@ -1,0 +1,5 @@
+openai-agents==0.19.2
+pipecat-ai[openai,elevenlabs,local,silero]==1.7.0
+elevenlabs==2.60.0
+openai==2.52.0
+python-dotenv==1.2.2
