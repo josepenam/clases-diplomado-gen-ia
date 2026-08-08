@@ -1,0 +1,15 @@
+[project]
+name = "leccion6-test-multimodalidad"
+version = "0.1.0"
+description = "Test de multimodalidad: benchmark de dibujo a ciegas vía TikZ (gpt-5.5 / gpt-5.4-mini / gpt-5-nano) con compilación LaTeX, rasterizado PyMuPDF y juez visual."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "openai==2.53.0",
+    "pymupdf==1.28.2",
+    "matplotlib==3.11.1",
+    "python-dotenv==1.2.2",
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+package = false
