@@ -1,0 +1,14 @@
+[project]
+name = "leccion2-skills-y-gestion"
+version = "0.1.0"
+description = "Agent Skills (SKILL.md): el estándar abierto, un mini skill-loader sobre la API de OpenAI (gpt-5-mini), y distribución multi-agente con Packmind."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "openai==2.53.0",
+    "pyyaml==6.0.3",
+    "python-dotenv==1.2.2",
+    "ipykernel>=6.29",
+]
+
+[tool.uv]
+package = false
