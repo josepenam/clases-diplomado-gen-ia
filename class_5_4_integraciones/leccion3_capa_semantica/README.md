@@ -1,6 +1,6 @@
 # leccion3_capa_semantica
 
-**Una capa semántica sobre una base de datos "heredada": lo que los datos significan, puesto en un grafo consultable.** Se crea una base SQLite mockeada de un centro de esquí (nombres crípticos, FKs sin declarar y una trampa de moneda invisible), se demuestra que un LLM a ciegas responde mal, y se construye la solución por capas en Neo4j: la capa técnica con [neocarta](https://github.com/neo4j-labs/neocarta) (Neo4j Labs), la capa de negocio desde una ontología escrita a mano, y una capa de sinónimos generada por `gpt-5-mini`.
+**Una capa semántica sobre una base de datos "heredada": lo que los datos significan, puesto en un grafo consultable.** Se crea una base SQLite mockeada de un centro de esquí (nombres crípticos, FKs sin declarar y una trampa de moneda invisible: pesos chilenos y argentinos conviviendo sin que nada lo diga), se demuestra que un LLM a ciegas responde mal, y se construye la solución por capas en Neo4j: la capa técnica con [neocarta](https://github.com/neo4j-labs/neocarta) (Neo4j Labs), la capa de negocio desde una ontología escrita a mano, y una capa de sinónimos generada por `gpt-5-mini`.
 
 Tercera lección de la Clase 5.4 — Integraciones. La lección 4 usa este grafo para el agente SQL.
 
@@ -8,11 +8,11 @@ Tercera lección de la Clase 5.4 — Integraciones. La lección 4 usa este grafo
 
 | Paso | Detalle |
 |---|---|
-| El problema | `gpt-5-mini` con el esquema pelado: encuentra `trx_pos.mnt` y **se pierde el ~25% del negocio** (`res_agt.imp`, que además está en USD sin que nada lo diga). |
+| El problema | `gpt-5-mini` con el esquema pelado: suma `trx_pos.mnt` (CLP) con `res_agt.imp` (ARS) directo, o ignora las agencias — no tiene cómo saber la moneda. |
 | La base | [`crear_base_datos.py`](crear_base_datos.py): 11 tablas SQLite, ~5.400 ventas, determinística por semilla. Solo 2 FKs declaradas; 7 joins son convención. |
 | Capa técnica | [`generar_metadata_csv.py`](generar_metadata_csv.py) introspecta con `PRAGMA` y escribe los CSVs del conector de neocarta → `(:Database)→(:Schema)→(:Table)→(:Column)→(:Value)` + glosario. |
 | Capa de negocio | [`ontologia.yaml`](ontologia.yaml) + [`construir_capa_negocio.py`](construir_capa_negocio.py): dominios, métricas, **monedas por declaración explícita**, joins por convención. Idempotente, con procedencia (`source`) por arista. |
-| El recorrido | Las consultas que el grafo responde: mapa por dominio, alineación por métrica, la trampa CLP/USD desarmada, joins listos para SQL, glosario, y el grafo dibujado (networkx). |
+| El recorrido | Las consultas que el grafo responde: mapa por dominio, alineación por métrica, la trampa CLP/ARS desarmada, joins listos para SQL, glosario, y el grafo dibujado (networkx). |
 | Enriquecimiento LLM | Sinónimos en español por tabla (`llm_sinonimos`), y búsqueda en el idioma del negocio. |
 
 ## Requisitos
@@ -51,7 +51,7 @@ La base (`montania.db`), los CSVs de metadata y el grafo dibujado quedan en `out
 
 ## Nota sobre el diseño
 
-- La moneda de cada columna es **declaración explícita en la ontología**, no un sufijo del nombre: en una versión anterior los nombres eran `mnt_clp`/`mnt_usd` y el modelo adivinaba bien — se quitó la pista a propósito, porque los esquemas reales no la traen.
+- La moneda de cada columna es **declaración explícita en la ontología**, no un sufijo del nombre ni una cuestión de magnitudes: en versiones anteriores los nombres (`mnt_clp`/`mnt_usd`) o los tamaños de los montos (USD chicos vs CLP grandes) delataban la moneda y el modelo adivinaba bien. Con pesos argentinos los montos son indistinguibles y el conocimiento es 100% tribal — como en los esquemas reales.
 - neocarta no tiene conector SQLite: el camino es introspección → CSVs normalizados → `CSVConnector`. El mismo patrón sirve para cualquier fuente sin conector.
 - El vector search / búsqueda híbrida de neocarta (`neocarta[mcp]`) queda como frontera: acá los sinónimos se buscan con `CONTAINS` para que se vea el mecanismo.
 
