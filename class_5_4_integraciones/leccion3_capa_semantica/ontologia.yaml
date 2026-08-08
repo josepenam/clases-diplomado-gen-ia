@@ -1,0 +1,79 @@
+# Ontología del centro de esquí — el conocimiento que NO está en el esquema.
+#
+# Esto es lo que la gente del equipo tiene en la cabeza: qué significa cada
+# tabla críptica, qué mide cada columna, en qué moneda, y cómo se juntan las
+# tablas cuando la base no declara las foreign keys. La capa de negocio del
+# grafo se construye leyendo este archivo (construir_capa_negocio.py).
+
+# --- dominio de negocio de cada tabla ---
+dominios:
+  ventas:   [trx_pos, cat_sku, lin_prod, can_venta, res_agt, agt_ext, fx_ref]
+  montania: [med_nieve, sec_mont, acc_lift]
+  clientes: [cli]
+
+# --- descripción de negocio de cada tabla (lo que el nombre no dice) ---
+descripciones:
+  trx_pos:   "Transacciones de punto de venta: cada línea vendida; mnt es el monto en CLP."
+  cat_sku:   "Catálogo de productos con precio de lista (prc_lst) en CLP."
+  lin_prod:  "Líneas de producto: forfaits, alquiler, clases, gastronomía."
+  can_venta: "Canales de venta: web, taquilla, hoteles, app."
+  cli:       "Maestro de clientes (RUT o pasaporte, nacionalidad)."
+  res_agt:   "Reservas de agencias internacionales — ¡imp está en USD, no en CLP!"
+  agt_ext:   "Agencias de viaje con convenio."
+  sec_mont:  "Sectores de la montaña con cota y dificultad."
+  med_nieve: "Medición diaria de nieve por sector: base, caída en 24h, temperatura mínima."
+  acc_lift:  "Pasadas de torniquete en andariveles (una fila por acceso)."
+  fx_ref:    "Tipo de cambio USD/CLP de referencia, diario."
+
+# --- qué métrica mide una columna (por substring del nombre, el más específico primero) ---
+metricas:
+  ingresos:     [mnt, imp]
+  precio:       [prc_lst]
+  nieve:        [base_cm, n24_cm]
+  temperatura:  [tmin_c]
+  visitantes:   [pax]
+  tipo_cambio:  [usd_clp]
+
+# --- moneda de cada columna de plata: conocimiento 100% tribal ---
+# (nada en el esquema dice que res_agt.imp está en dólares; acá queda escrito)
+monedas:
+  - {tabla: trx_pos, columna: mnt,     moneda: CLP}
+  - {tabla: cat_sku, columna: prc_lst, moneda: CLP}
+  - {tabla: res_agt, columna: imp,     moneda: USD}
+
+# --- de qué métrica trata cada tabla completa (ABOUT — alineación entre tablas) ---
+tablas_sobre:
+  trx_pos:   ingresos
+  res_agt:   ingresos
+  med_nieve: nieve
+  acc_lift:  visitantes
+  fx_ref:    tipo_cambio
+
+# --- joins por convención: las FKs que el esquema NO declara ---
+# (el equipo "sabe" que canal_id junta con can_venta, pero SQLite no lo sabe)
+convenciones_join:
+  - {desde_tabla: trx_pos,   desde_col: canal_id,  hasta_tabla: can_venta, hasta_col: canal_id}
+  - {desde_tabla: trx_pos,   desde_col: cli_id,    hasta_tabla: cli,       hasta_col: cli_id}
+  - {desde_tabla: res_agt,   desde_col: agt_id,    hasta_tabla: agt_ext,   hasta_col: agt_id}
+  - {desde_tabla: med_nieve, desde_col: sector_id, hasta_tabla: sec_mont,  hasta_col: sector_id}
+  - {desde_tabla: acc_lift,  desde_col: sector_id, hasta_tabla: sec_mont,  hasta_col: sector_id}
+  - {desde_tabla: acc_lift,  desde_col: cli_id,    hasta_tabla: cli,       hasta_col: cli_id}
+  - {desde_tabla: res_agt,   desde_col: f_res,     hasta_tabla: fx_ref,    hasta_col: f}
+
+# --- glosario de negocio (términos que usa la gente, no las tablas) ---
+glosario:
+  nombre: glosario_montania
+  descripcion: "Términos de negocio del centro de esquí"
+  categorias:
+    ingresos:
+      descripcion: "Métricas de plata"
+      terminos:
+        forfait:         "Ticket de andarivel; la línea de producto principal (cod_ln FORF en lin_prod)."
+        ticket_promedio: "Ingresos POS / número de transacciones (mnt de trx_pos)."
+        venta_agencias:  "Reservas de operadores internacionales (res_agt) — se manejan en USD."
+    operacion:
+      descripcion: "Métricas de montaña"
+      terminos:
+        base:      "Profundidad de nieve acumulada en cm (base_cm de med_nieve)."
+        temporada: "Junio a agosto; el pico histórico es mediados de julio."
+        pasadas:   "Accesos a andariveles (acc_lift); proxy de visitantes por día."
