@@ -12,6 +12,7 @@ Cada clase es autocontenida: su propio `README`, su entorno y sus lecciones paso
 | **5.1 — Modelos open source** | Correr LLMs abiertos localmente (Ollama), afinarlos (fine-tuning) y servirlos rápido (Groq) | [carpeta](class_5_1_opensource/README.md) · [demos interactivos](class_5_1_opensource/deck/serving_llm_a_escala.html) |
 | **5.2 — Imágenes** | Detección local (YOLO), entendimiento multimodal, generación (gpt-image-2), OCR semántico, parsing agéntico y RAG visual | [carpeta](class_5_2_imagenes/README.md) · [diapositivas](class_5_2_imagenes/deck/deck_5_2_imagenes.pptx) |
 | **5.3 — Voz** | La señal de audio, transcripción, síntesis dirigible, agentes de voz en cascada y modelos voice-to-voice | [carpeta](class_5_3_voz/README.md) · [diapositivas](class_5_3_voz/deck/deck_5_3_voz.pptx) |
+| **5.4 — Integraciones** | MCP, skills y su gestión, capas semánticas en grafos, un agente SQL semántico, CodeAct en sandbox y un test de multimodalidad | [carpeta](class_5_4_integraciones/README.md) · [diapositivas](class_5_4_integraciones/deck/deck_5_4_integraciones.pptx) |
 
 *(Se irán agregando más clases del diplomado.)*
 
@@ -103,6 +104,26 @@ autocontenida y ejecutable por separado (entorno `uv` propio).
 **Diapositivas:** [`deck_5_3_voz.pptx`](class_5_3_voz/deck/deck_5_3_voz.pptx)
 
 Más detalle (objetivos, prerrequisitos, entornos): [`class_5_3_voz/README.md`](class_5_3_voz/README.md).
+
+---
+
+## Clase 5.4 — Integraciones
+
+Conectar el LLM con todo lo que no es el LLM — herramientas, conocimiento operativo, datos
+de la empresa, cómputo y datos visuales — con un hilo conductor que se mide en cada lección:
+**el contraste con y sin la integración.** Seis lecciones, cada una autocontenida y ejecutable
+por separado (entorno `uv` propio).
+
+1. **[Lección 1 · MCP](class_5_4_integraciones/leccion1_mcp/)** — dos servidores FastMCP mock (transacciones y pronóstico de nieve) con tools tipadas, resources por URI y progreso vía `ctx`; un cliente que descubre capacidades por protocolo y un agente LangChain 1.x que responde con datos lo que sin tools solo adivinaba.
+2. **[Lección 2 · Skills y su gestión](class_5_4_integraciones/leccion2_skills_y_gestion/)** — el estándar abierto SKILL.md desarmado: un skill-loader de ~30 líneas (progressive disclosure = inyección condicional de contexto), el contraste con/sin skill verificado, y la misma skill materializada para varios agentes con **Packmind**.
+3. **[Lección 3 · Capas semánticas](class_5_4_integraciones/leccion3_capa_semantica/)** — una base SQLite "heredada" con trampa de moneda invisible (CLP y ARS conviviendo sin que nada lo diga) y su capa semántica en **Neo4j** por capas con procedencia: técnica ([neocarta](https://github.com/neo4j-labs/neocarta)), negocio (ontología) y sinónimos (LLM).
+4. **[Lección 4 · El agente SQL semántico](class_5_4_integraciones/leccion4_agente_sql_semantico/)** — el capstone: `leer_cypher` + `ejecutar_sql` (solo lectura, con guardas) y el método DESCUBRIR → VERIFICAR → CALCULAR → EXPLICAR. El agente a ciegas fabrica un total que no existe; el informado descubre la moneda en el grafo y convierte.
+5. **[Lección 5 · CodeAct](class_5_4_integraciones/leccion5_codeact_ejecucion_de_codigo/)** — el sandbox de ejecución de código de Anthropic contra un agente de tool-calling puro en el mismo análisis: la mediana, la correlación y la regresión que el menú fijo no puede calcular están a un `import pandas` del otro.
+6. **[Lección 6 · Test de multimodalidad](class_5_4_integraciones/leccion6_test_multimodalidad/)** — el test del unicornio de *Sparks of AGI* con modelos de hoy: dibujar a ciegas vía TikZ, compilar (los fracasos son dato), y un juez con visión que puntúa — texto → código → imagen → juicio visual.
+
+**Diapositivas:** [`deck_5_4_integraciones.pptx`](class_5_4_integraciones/deck/deck_5_4_integraciones.pptx)
+
+Más detalle (objetivos, prerrequisitos, entornos): [`class_5_4_integraciones/README.md`](class_5_4_integraciones/README.md).
 
 ---
 
