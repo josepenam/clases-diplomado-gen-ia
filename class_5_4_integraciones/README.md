@@ -151,6 +151,8 @@ Los `requirements.txt` de cada lección espejan los pins exactos para el camino 
 
 Never commit a real `.env`. Cada lección trae su `.env.example`; la copia real vive solo en tu máquina (los `.gitignore` de lección y raíz la excluyen). En Colab usa el gestor de secretos (`userdata`) — las primeras celdas lo leen solas. Las llaves por lección: `OPENAI_API_KEY` (todas), `ANTHROPIC_API_KEY` (solo L5), `NEO4J_*` (L3–L4), `PACKMIND_API_KEY_V3` (L2, opcional).
 
+Todas las lecciones cargan con `load_dotenv(override=True)`, a propósito: si tu editor o tu shell ya exporta una de estas variables (una `ANTHROPIC_API_KEY` de otro proyecto, un `NEO4J_URI` que apunta a otro servidor), sin `override` esa variable heredada gana y el notebook falla con un `401` o se conecta a la base equivocada — con el `.env` correcto delante de tus ojos. Si algo así te pasa, `import os; os.environ["LA_VARIABLE"][:12]` te dice qué llave está usando de verdad.
+
 ## Nota sobre modelos y APIs
 
 | El material usaba | Ahora usa | Por qué |

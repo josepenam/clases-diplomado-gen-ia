@@ -86,7 +86,7 @@ def moneda_de(tabla: str, columna: str, ontologia: dict) -> str | None:
 
 
 def construir(verboso: bool = True) -> None:
-    load_dotenv(AQUI / ".env")
+    load_dotenv(AQUI / ".env", override=True)  # el .env de la lección gana sobre variables heredadas
     ontologia = yaml.safe_load((AQUI / "ontologia.yaml").read_text())
 
     driver = GraphDatabase.driver(
