@@ -31,7 +31,7 @@ AQUI = Path(__file__).resolve().parent
 
 
 def construir(verboso: bool = True) -> None:
-    load_dotenv(AQUI / ".env")
+    load_dotenv(AQUI / ".env", override=True)  # el .env de la lección gana sobre variables heredadas
 
     driver = GraphDatabase.driver(
         os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
