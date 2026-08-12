@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estado de la IA en la empresa — 2026</title>
+<!--
+  Clase 5.5 — Estrategia y cierre. Diplomado de Extensión en IA Generativa para
+  Organizaciones, FEN Universidad de Chile.
+
+  Instrumento autocontenido: cero CDN, cero librerías, cero peticiones de red. Los
+  gráficos son SVG generados en el navegador. Funciona abriendo el archivo con
+  doble clic, sin internet.
+
+  Paleta validada con el validador de la skill `dataviz` contra las superficies
+  reales de esta página:
+    claro  (#ffffff): #35619e #d95926 #199e70 #eda100
+                      CVD ΔE 9.4 · visión normal 21.7 · contraste ≥3:1
+    oscuro (#14171c): #5586c6 #d95926 #199e70 #c98500
+                      CVD ΔE 8.4 · visión normal 19.8 · contraste ≥3:1
+    rampa ordinal navy, ambos modos, L monótona y ΔL ≥ 0.06.
+  El navy institucional #1C3F7F queda fuera de la banda de luminosidad como color
+  de serie (L = 0.38), así que se reserva para tinta y titulares.
+
+  Advertencia sobre las fuentes: los tres informes de NVIDIA se publican como
+  «2026 Trends» pero el trabajo de campo es de agosto–septiembre de 2025, la muestra
+  es autoseleccionada de las listas del propio proveedor, y todo «subió desde X»
+  compara contra la ola anterior. Está dicho en la sección de metodología, que se
+  muestra abierta a propósito: no es letra chica.
+-->
+<style>
+:root {
+  color-scheme: light;
+
+  --surface:        #ffffff;
+  --plane:          #f7f7f5;
+  --raised:         #ffffff;
+  --ink:            #0b0b0b;
+  --ink-2:          #52514e;
+  --muted:          #888888;
+  --grid:           #e1e0d9;
+  --axis:           #c3c2b7;
+  --hairline:       rgba(11,11,11,.10);
+
+  --brand:          #1c3f7f;
+  --s1:             #35619e;
+  --s2:             #d95926;
+  --s3:             #199e70;
+  --s4:             #eda100;
+
+  --o1:             #8fb2df;
+  --o2:             #5586c6;
+  --o3:             #2d5695;
+  --o4:             #1c3f7f;
+
+  --good:           #0ca30c;
+  --warn:           #fab219;
+  --crit:           #d03b3b;
+
+  --radius: 10px;
+  --sans: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* El modo oscuro es una selección, no una inversión: son los mismos tonos
+   re-escalonados para la superficie oscura y validados como conjunto. Se declara
+   en los dos ámbitos para que el interruptor gane en ambos sentidos. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #14171c;  --plane: #0d0f12;  --raised: #1a1e25;
+    --ink: #ffffff;      --ink-2: #c3c2b7;  --muted: #8b8f96;
+    --grid: #262b33;     --axis: #3a4048;   --hairline: rgba(255,255,255,.12);
+    --brand: #9dc0ef;
+    --s1: #5586c6;  --s2: #d95926;  --s3: #199e70;  --s4: #c98500;
+    --o1: #2d5695;  --o2: #4a7cc0;  --o3: #6f9fe0;  --o4: #9dc0ef;
+    --good: #0ca30c; --warn: #fab219; --crit: #e05a5a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #14171c;  --plane: #0d0f12;  --raised: #1a1e25;
+  --ink: #ffffff;      --ink-2: #c3c2b7;  --muted: #8b8f96;
+  --grid: #262b33;     --axis: #3a4048;   --hairline: rgba(255,255,255,.12);
+  --brand: #9dc0ef;
+  --s1: #5586c6;  --s2: #d95926;  --s3: #199e70;  --s4: #c98500;
+  --o1: #2d5695;  --o2: #4a7cc0;  --o3: #6f9fe0;  --o4: #9dc0ef;
+  --good: #0ca30c; --warn: #fab219; --crit: #e05a5a;
+}
+:root[data-theme="light"] { color-scheme: light; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--plane);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;               /* la página nunca scrollea en horizontal */
+}
+.wrap { max-width: 1500px; margin: 0 auto; padding: 28px 22px 64px; }
+
+/* ── Cabecera ─────────────────────────────────────────────────────────────── */
+header { border-bottom: 1px solid var(--hairline); padding-bottom: 20px; margin-bottom: 26px; }
+.titlerow { display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
+h1 { font-size: clamp(21px, 2.5vw, 29px); line-height: 1.2; margin: 0 0 8px; letter-spacing: -.01em; }
+h1 .thin { color: var(--ink-2); font-weight: 400; }
+.lede { color: var(--ink-2); max-width: 74ch; margin: 0; font-size: 14px; }
+.srcline { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.srcline code { font-family: var(--mono); font-size: 11px; background: var(--surface);
+  border: 1px solid var(--hairline); border-radius: 4px; padding: 1px 5px; }
+.spacer { flex: 1 1 auto; }
+
+button, select {
+  font-family: inherit; font-size: 13px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: 8px; padding: 7px 12px; cursor: pointer;
+}
+button:hover, select:hover { background: var(--raised); border-color: var(--axis); }
+button:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--s1); outline-offset: 2px;
+}
+
+/* ── Fila de controles: una sola, arriba de todo lo que gobierna ──────────── */
+.controls {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  margin-bottom: 8px;
+}
+.controls .label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--hairline); border-radius: 8px;
+  overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 7px 14px; background: transparent; }
+.seg button + button { border-left: 1px solid var(--hairline); }
+.seg button[aria-pressed="true"] { background: var(--s1); color: #fff; }
+.hint { color: var(--muted); font-size: 12px; margin: 6px 0 26px; }
+
+/* ── Tarjetas ─────────────────────────────────────────────────────────────── */
+section { margin-bottom: 34px; }
+h2 { font-size: 17px; margin: 0 0 4px; letter-spacing: -.005em; }
+.sub { color: var(--ink-2); font-size: 13.5px; margin: 0 0 16px; max-width: 88ch; }
+.card {
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: var(--radius); padding: 18px;
+}
+/* min() en el minmax: sin él, una columna de 210px fuerza el desborde horizontal de
+   toda la página en viewports más angostos que eso. */
+.kpis { display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); }
+.kpi { background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: var(--radius); padding: 15px 16px; }
+.kpi .k-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); }
+.kpi .k-value { font-size: 33px; line-height: 1.1; margin-top: 6px; color: var(--brand);
+  font-weight: 600; }              /* cifras proporcionales, no tabulares */
+.kpi .k-foot { font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+.kpi .k-delta { font-size: 12px; margin-top: 4px; }
+.up { color: var(--good); } .down { color: var(--crit); }
+
+.grid2 { display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(430px, 100%), 1fr)); }
+
+/* ── Gráficos ─────────────────────────────────────────────────────────────── */
+/* Un gráfico de barras con etiquetas de categoría tiene un ancho mínimo real. Por
+   debajo de ese ancho scrollea dentro de su propia caja, igual que la tabla: la
+   página nunca scrollea en horizontal. */
+.chartbox { overflow-x: auto; overflow-y: hidden; }
+.chart { display: block; width: 100%; }
+.chart text { font-family: var(--sans); }
+.ct { font-size: 11px; fill: var(--muted); }        /* eje / ticks */
+.cl { font-size: 12px; fill: var(--ink); }          /* etiqueta de categoría */
+.cv { font-size: 12px; fill: var(--ink); font-weight: 600; }  /* valor directo */
+.cvi { font-size: 12px; font-weight: 600; }         /* valor dentro de un tramo */
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 10px; padding: 0;
+  list-style: none; font-size: 12.5px; color: var(--ink-2); }
+.legend li { display: inline-flex; align-items: center; gap: 7px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; }
+.note { color: var(--muted); font-size: 11.5px; margin: 10px 0 0; }
+.take { color: var(--ink-2); font-size: 13.5px; margin: 12px 0 0; }
+.take b { color: var(--ink); }
+
+/* ── Tabla comparadora ────────────────────────────────────────────────────── */
+.tablewrap { overflow-x: auto; }                    /* el ancho scrollea aquí, no en body */
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 13.5px; }
+th, td { text-align: right; padding: 9px 12px; border-bottom: 1px solid var(--hairline);
+  font-variant-numeric: tabular-nums; }             /* columnas alineadas */
+th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+thead th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase;
+  letter-spacing: .06em; cursor: pointer; white-space: nowrap; position: relative; }
+thead th:hover { color: var(--ink); }
+thead th[aria-sort] { color: var(--ink); }
+tbody tr:hover { background: var(--plane); }
+tbody td.sel { font-weight: 600; color: var(--ink); }   /* la industria seleccionada */
+td.na { color: var(--muted); }
+caption { caption-side: bottom; text-align: left; color: var(--muted); font-size: 11.5px;
+  padding-top: 12px; }
+
+/* ── Metodología ──────────────────────────────────────────────────────────── */
+.meth table { min-width: 640px; font-size: 13px; }
+.meth td, .meth th { text-align: left; font-variant-numeric: normal; vertical-align: top; }
+.meth td:nth-child(2), .meth th:nth-child(2) { white-space: nowrap; }
+.warnbox { border-left: 3px solid var(--warn); padding: 10px 0 10px 14px; margin: 0 0 16px;
+  color: var(--ink-2); font-size: 13.5px; }
+
+footer { border-top: 1px solid var(--hairline); padding-top: 20px; color: var(--muted);
+  font-size: 12.5px; }
+footer a { color: var(--s1); }
+
+/* ── Tooltip ──────────────────────────────────────────────────────────────── */
+#tip {
+  position: fixed; pointer-events: none; opacity: 0; transition: opacity .1s;
+  background: var(--ink); color: var(--surface); font-size: 12px; line-height: 1.4;
+  padding: 7px 10px; border-radius: 6px; max-width: 280px; z-index: 50;
+}
+.hit { cursor: default; }
+
+@media print { .controls, #tip { display: none; } body { background: #fff; } }
+</style>
+</head>
+<body>
+<div id="tip" role="status" aria-live="polite"></div>
+
+<div class="wrap">
+<header>
+  <div class="titlerow">
+    <div>
+      <h1>Estado de la IA en la empresa <span class="thin">— informes 2026</span></h1>
+      <p class="lede">Tres encuestas sectoriales de NVIDIA, la encuesta de agentes de
+        Anthropic y Material, y los contrapuntos de McKinsey y MIT, puestos lado a lado.
+        Sirve para responder una sola pregunta: <b>¿dónde está realmente la industria,
+        y qué tan en serio hay que tomarse estas cifras?</b></p>
+      <p class="srcline">Campo de las encuestas de NVIDIA: <b>agosto–septiembre de 2025</b>,
+        publicadas como «2026 Trends». Ver <a href="#metodologia">metodología</a>.</p>
+    </div>
+    <div class="spacer"></div>
+    <button id="theme" aria-label="Cambiar entre tema claro y oscuro">◐ Tema</button>
+  </div>
+</header>
+
+<div class="controls" role="group" aria-label="Filtros del panel">
+  <span class="label">Industria</span>
+  <div class="seg" id="segInd" role="group" aria-label="Elegir industria"></div>
+  <span class="label" style="margin-left:8px">Barreras</span>
+  <div class="seg" id="segOla" role="group" aria-label="Elegir ola de la encuesta"></div>
+  <div class="spacer"></div>
+  <button id="csv">↓ CSV</button>
+</div>
+<p class="hint">Todo lo de abajo responde a estos controles. Los valores están además en
+  la <a href="#comparador">tabla comparadora</a>, así que ningún número vive solo en un
+  tooltip.</p>
+
+<section>
+  <h2 id="kpiTitle"></h2>
+  <p class="sub" id="kpiSub"></p>
+  <div class="kpis" id="kpis"></div>
+</section>
+
+<section class="grid2">
+  <div class="card">
+    <h2>La era piloto terminó</h2>
+    <p class="sub">Uso activo de IA, ola anterior contra ola actual. En servicios
+      financieros el «evaluando» cayó de 50 % a 24 %: los pilotos se drenan hacia
+      producción en vez de multiplicarse.</p>
+    <ul class="legend" id="legAdo"></ul>
+    <div class="chartbox"><svg class="chart" id="chAdo" role="img"
+         aria-label="Uso activo de IA por industria, ola anterior contra ola actual"></svg></div>
+    <p class="note">Fuente: NVIDIA 2026 Trends — servicios financieros p. 4 y 6,
+      salud p. 4 y 6, retail p. 3 y 6.</p>
+  </div>
+  <div class="card">
+    <h2>Agentes: el consenso incómodo</h2>
+    <p class="sub">La etapa de despliegue es notablemente uniforme entre industrias —
+      en torno a 1 de cada 5 organizaciones ya tiene agentes en producción. Lo que
+      cambia no es cuánto, es <b>para qué</b>.</p>
+    <ul class="legend" id="legAge"></ul>
+    <div class="chartbox"><svg class="chart" id="chAge" role="img"
+         aria-label="Etapa de despliegue de agentes por industria"></svg></div>
+    <p class="note">Fuente: NVIDIA 2026 Trends — servicios financieros p. 8, salud p. 10,
+      retail p. 5 y 8.</p>
+  </div>
+</section>
+
+<section class="grid2">
+  <div class="card">
+    <h2 id="ttlUso">Para qué se usa</h2>
+    <p class="sub" id="subUso"></p>
+    <div class="chartbox"><svg class="chart" id="chUso" role="img" aria-label="Principales casos de uso"></svg></div>
+    <p class="note" id="notUso"></p>
+  </div>
+  <div class="card">
+    <h2 id="ttlBar">El cuello de botella</h2>
+    <p class="sub" id="subBar"></p>
+    <div class="chartbox"><svg class="chart" id="chBar" role="img" aria-label="Principales barreras"></svg></div>
+    <p class="take" id="takeBar"></p>
+  </div>
+</section>
+
+<section>
+  <h2>El corte que te toca: Capital Markets</h2>
+  <p class="sub">Es el segmento más cercano a una AFP o una gestora de activos —
+    el informe <b>no desagrega fondos de pensiones ni seguros</b>, aunque seguros sí
+    está en la muestra. Léelo como una ventana, no como un diagnóstico: el segmento más
+    maduro en datos es el más atrasado en agentes.</p>
+  <div class="card">
+    <ul class="legend" id="legCm"></ul>
+    <div class="chartbox"><svg class="chart" id="chCm" role="img"
+         aria-label="Capital Markets contra el total de servicios financieros"></svg></div>
+    <p class="note">Fuente: NVIDIA, «State of AI in Financial Services: 2026 Trends»,
+      p. 6, 9 y 10. Fintech alcanza 63 % en IA agéntica: el techo del sector.</p>
+  </div>
+</section>
+
+<section>
+  <h2>La contradicción del ROI</h2>
+  <p class="sub">A un lado, la percepción de retorno a nivel de caso de uso. Al otro,
+    la atribución contable a nivel de resultado. Nadie miente: se está midiendo distinto,
+    y el ROI es <b>difuso</b> — en servicios financieros, 12 casos de uso distintos
+    sacaron ≥10 % cada uno en «mayor ROI». No construyas el business case sobre un
+    moonshot.</p>
+  <div class="card">
+    <ul class="legend" id="legRoi"></ul>
+    <div class="chartbox"><svg class="chart" id="chRoi" role="img"
+         aria-label="Percepción de retorno contra atribución contable"></svg></div>
+    <p class="note">Fuentes: NVIDIA servicios financieros p. 4–5 y 10 ·
+      Anthropic + Material p. 17 · McKinsey, «State of AI trust in 2026» ·
+      MIT NANDA, «The GenAI Divide» (reporta el complemento: 95 % de los pilotos
+      <i>sin</i> impacto medible en P&amp;L).</p>
+  </div>
+</section>
+
+<section id="comparador">
+  <h2>Comparador de industrias</h2>
+  <p class="sub">Toda la evidencia comparable, lado a lado. Clic en un encabezado para
+    ordenar. La fila de servicios financieros queda destacada porque es la de referencia
+    para esta clase. «—» significa que el informe no publica esa cifra.</p>
+  <div class="card">
+    <div class="tablewrap">
+      <table id="tabla">
+        <caption>Todas las cifras en porcentaje de organizaciones, salvo donde se indique.
+          Las tres encuestas de NVIDIA se levantaron en la misma ventana, así que las
+          columnas son comparables entre sí; no lo son contra las encuestas de otras
+          casas.</caption>
+        <thead></thead><tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="metodologia" class="meth">
+  <h2>Metodología, y por qué importa</h2>
+  <p class="sub">Esto va abierto y arriba, no en letra chica al pie: la mitad de estos
+    informes los publica quien vende la infraestructura.</p>
+  <div class="warnbox">
+    <b>Tres advertencias que hay que decir en voz alta.</b>
+    <b>Una:</b> el «2026» del título es el año de publicación — el trabajo de campo de
+    NVIDIA es de agosto–septiembre de 2025, y todo «subió desde X» compara contra la ola
+    anterior, no contra el año calendario.
+    <b>Dos:</b> las muestras son autoseleccionadas de las listas de distribución del
+    propio proveedor; no son muestras probabilísticas, así que no hay margen de error que
+    citar.
+    <b>Tres:</b> en servicios financieros, seguros está en la muestra pero
+    <b>nunca se desagrega</b>, y no existe ningún corte de fondos de pensiones.
+  </div>
+  <div class="card">
+    <div class="tablewrap">
+      <table id="tmeth"><thead></thead><tbody></tbody></table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><b>Clase 5.5 — Estrategia y cierre.</b> Diplomado de Extensión en IA Generativa
+    para Organizaciones · Facultad de Economía y Negocios, Universidad de Chile.</p>
+  <p>Instrumento hermano: <a href="analisis_automatizacion.html">Análisis de
+    automatización — penetración de IA por tarea</a>, 17.992 tareas de la taxonomía
+    O*NET puntuadas por penetración observada.</p>
+  <p>Esta página es autocontenida: no hace ninguna petición de red y funciona sin
+    internet.</p>
+</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DATOS.  Cada campo lleva su fuente y página en el comentario, para que las
+   cifras sean auditables sin leer el código de dibujo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const IND = {
+  fs:   { nom: "Servicios financieros", corto: "Serv. financieros" },
+  hc:   { nom: "Salud y ciencias de la vida", corto: "Salud" },
+  rt:   { nom: "Retail y consumo masivo", corto: "Retail" },
+};
+const ORDEN = ["fs", "hc", "rt"];
+
+const D = {
+  // Uso activo de IA: ola anterior → ola actual.  FS p.4/6 · HC p.4/6 · RT p.3/6
+  adopcion:      { fs: [45, 65], hc: [63, 70], rt: [42, 58] },
+  // Evaluando (assessing): ola anterior → actual.  FS p.6 · HC p.6 · RT p.3/4
+  evaluando:     { fs: [50, 24], hc: [30, 26], rt: [47, 33] },
+  // No usa ni planea usar.  FS p.6 · HC p.6 · RT p.6 (<1.000 empleados)
+  noUsa:         { fs: 11, hc: 4, rt: 15 },
+  // Uso activo en empresas grandes.  FS p.6 (1.000+) · RT p.6 (1.000+)
+  grandes:       { fs: 76, hc: null, rt: 69 },
+  // IA generativa y LLMs como área de foco.  FS p.6 · HC p.4/6 · RT p.10
+  genai:         { fs: 61, hc: 69, rt: 66 },
+  // Analítica de datos como área de foco.  FS p.6 · HC p.6 · RT p.10
+  analitica:     { fs: 68, hc: 65, rt: 66 },
+  // Agentes: etapa como % del total. [ya desplegados, próximos 12 meses, más adelante]
+  // FS p.8 (derivado del 42 % que usa o evalúa) · HC p.10 (serie publicada) · RT p.5/8
+  agentes:       { fs: [21, 17, 4], hc: [22, 19, 6], rt: [20, 21, 6] },
+  // Usa o evalúa agentes.  FS p.4/8 · HC p.5/10 · RT p.5/8
+  agenticaTotal: { fs: 42, hc: 47, rt: 47 },
+  // Reporta que la IA subió ingresos.  FS p.4/10 · HC p.13 (nivel gerencial) · RT p.4/6
+  ingresos:      { fs: 89, hc: 85, rt: 89 },
+  // Reporta que la IA bajó costos.  FS p.4/10 · HC p.13 · RT p.4/6
+  costos:        { fs: 89, hc: 80, rt: 95 },
+  // Aumentará el presupuesto de IA en 2026.  FS p.12 · HC p.13-14 · RT p.4/7
+  presupuesto:   { fs: 83, hc: 85, rt: 90 },
+  // Lo aumentará en más de 10 %.  Salud no publica cifra única (50 % chicas / 40 % grandes)
+  presupuesto10: { fs: 44, hc: 45, rt: 58 },
+  // Open source moderadamente a extremadamente importante.  FS p.4/7 · HC p.5/9 · RT p.4/8
+  openSource:    { fs: 84, hc: 82, rt: 79 },
+  // Arquitectura híbrida.  FS p.5/13 · HC p.9 · RT no publica
+  hibrido:       { fs: 47, hc: 43, rt: null },
+  // Prioridad n.º 1 de gasto: optimizar los flujos que ya funcionan.  FS p.12 · HC p.13 · RT p.7
+  optimizar:     { fs: 41, hc: 47, rt: 36 },
+
+  // Casos de uso principales, por industria.
+  uso: {
+    fs: { titulo: "Flujos de trabajo que ya usan agentes",
+          nota: "Fuente: NVIDIA, «State of AI in Financial Services: 2026 Trends», p. 8.",
+          sub: "Todo lo de abajo es trabajo documental de <b>bajo radio de daño</b>: " +
+               "conocimiento, proceso interno y cumplimiento. Los agentes no entraron " +
+               "por la cara al cliente.",
+          items: [["Gestión y recuperación de conocimiento", 56],
+                  ["Optimización de procesos internos", 52],
+                  ["Automatización de soporte al cliente", 43],
+                  ["Orquestación de tareas y proyectos", 38],
+                  ["Monitoreo de cumplimiento y riesgo", 35]] },
+    hc: { titulo: "Casos de uso agéntico",
+          nota: "Fuente: NVIDIA, «State of AI in Healthcare and Life Sciences: 2026 Trends», p. 10.",
+          sub: "El patrón se repite: primero el conocimiento y la literatura, después " +
+               "lo clínico. La regulación no impide adoptar — <b>diseña</b> cómo se adopta.",
+          items: [["Gestión y recuperación de conocimiento", 46],
+                  ["Revisión y análisis de literatura", 38],
+                  ["Optimización de procesos internos", 37]] },
+    rt: { titulo: "Usos actuales de agentes",
+          nota: "Fuente: NVIDIA, «State of AI in Retail and CPG: 2026 Trends», p. 9.",
+          sub: "El único sector donde los agentes ya tocan al cliente en volumen. Y ojo: " +
+               "la adopción agéntica es <b>mayor en empresas chicas</b> (54 %) que en " +
+               "grandes (40 %).",
+          items: [["Automatización de flujos internos", 59],
+                  ["Gestión y recuperación de conocimiento", 59],
+                  ["Asistentes de soporte al cliente", 48],
+                  ["Asistentes para empleados", 48],
+                  ["Marketing y publicidad personalizados", 48]] },
+  },
+
+  // Barreras: [ola anterior, ola actual].  null = el informe no publica la ola anterior.
+  barreras: {
+    fs: { items: [["Datos: privacidad, soberanía, dispersión", 33, 40],
+                  ["Falta de expertos en IA y científicos de datos", null, 35],
+                  ["Preocupaciones regulatorias y éticas", null, 25],
+                  ["Suficiencia de datos de entrenamiento", 49, 16]],
+          take: "El problema de <b>volumen</b> de datos se resolvió: 49 % en 2023, " +
+                "31 % en 2024, <b>16 %</b> hoy. Lo reemplazó el de <b>gobierno</b> de datos.",
+          nota: "Fuente: NVIDIA servicios financieros p. 10. La ola anterior de datos de " +
+                "entrenamiento es 2023." },
+    hc: { items: [["Datos: privacidad, ubicación, soberanía (grandes)", null, 39],
+                  ["Regulatorias y éticas (grandes)", null, 37],
+                  ["Falta de presupuesto (chicas)", null, 40],
+                  ["Falta de expertos en IA (grandes)", null, 33]],
+          take: "La barrera depende del tamaño: presupuesto en las chicas (<b>40 %</b> " +
+                "contra 20 % en las grandes), gobierno de datos y regulación en las grandes.",
+          nota: "Fuente: NVIDIA salud p. 8 y 14. La falta de expertos la reportan 39 % de " +
+                "quienes todavía evalúan y solo 24 % de quienes ya operan." },
+    rt: { items: [["Escasez de talento en IA", 31, 46],
+                  ["Privacidad y soberanía de datos", 22, 18],
+                  ["Suficiencia de datos de entrenamiento", 27, 13]],
+          take: "El cuello de botella ya se movió de los datos a las <b>personas</b>: " +
+                "el talento salta 15 puntos y pasa a ser la barrera n.º 1, mientras " +
+                "92 % de los ejecutivos planea subir el presupuesto.",
+          nota: "Fuente: NVIDIA retail p. 15–16." },
+  },
+
+  // Capital Markets contra el total de servicios financieros.  FS p. 6, 9, 10.
+  capitalMarkets: [["Uso activo de IA", 68, 65],
+                   ["Analítica de datos como foco", 73, 68],
+                   ["IA agéntica en uso o evaluación", 32, 42],
+                   ["Mejora en experiencia de cliente", 27, 37]],
+
+  // La contradicción del ROI.  grupo 0 = percepción · grupo 1 = atribución contable.
+  roi: [["Subió ingresos y bajó costos · NVIDIA serv. financieros", 89, 0],
+        ["Reporta retorno sobre la inversión · NVIDIA serv. financieros", 83, 0],
+        ["Impacto económico medible hoy · Anthropic + Material", 80, 0],
+        ["Atribuye algún impacto en EBIT · McKinsey", 39, 1],
+        ["«High performers» que capturan el valor · McKinsey", 6, 1],
+        ["Pilotos con impacto medible en P&L · MIT NANDA", 5, 1]],
+
+  // Fichas metodológicas.
+  metodologia: [
+    ["NVIDIA · State of AI in Financial Services: 2026 Trends (6.ª edición)", "839",
+     "ago–sep 2025",
+     "50/50 gerencia y practicantes. Un tercio con ingresos >USD 250 M; 40 % con más de " +
+     "500 empleados. Global, con China vía una agencia externa. Seguros está en la muestra " +
+     "pero nunca se desagrega."],
+    ["NVIDIA · State of AI in Healthcare and Life Sciences: 2026 Trends", "más de 600",
+     "ago–sep 2025",
+     "60/40 gerencia y practicantes. Un tercio con ingresos >USD 20 M; 40 % con más de " +
+     "1.000 empleados. Global, listas de distribución de NVIDIA."],
+    ["NVIDIA · State of AI in Retail and CPG: 2026 Trends (3.ª edición)", "no revelado",
+     "ago–sep 2025",
+     "Ejecutivos, gerentes y practicantes, sin desglose publicado. Global. No publica el N, " +
+     "así que ninguna cifra suya admite lectura de precisión."],
+    ["Anthropic + Material · The 2026 State of AI Agents Report", "más de 500",
+     "fines de 2025",
+     "Líderes técnicos de Estados Unidos: liderazgo de ingeniería, ejecutivos de TI y " +
+     "decisores técnicos. Solo Estados Unidos. Encuesta de proveedor."],
+    ["Anthropic Economic Index", "1 M + 1 M",
+     "13–20 nov 2025",
+     "Un millón de conversaciones de Claude.ai y un millón de registros de la API, con " +
+     "métodos que preservan privacidad. Mide el uso de Claude, no el del mercado completo."],
+    ["McKinsey · State of AI trust in 2026", "no revelado", "2026",
+     "Consultora con incentivo comercial en el resultado. Es el contrapunto útil porque " +
+     "mide atribución a EBIT, no percepción."],
+    ["MIT NANDA · The GenAI Divide", "52 + 153 + 300", "2025–26",
+     "52 entrevistas a ejecutivos, 153 encuestas y 300 despliegues públicos. Base " +
+     "cualitativa chica para un titular tan citado como el «95 % de los pilotos»."],
+    ["AI Engineer World's Fair 2026", "500+ sesiones", "29 jun – 2 jul 2026",
+     "Conferencia en San Francisco. Las cifras las autoinforma cada expositor " +
+     "(Microsoft, McKinsey, Anthropic, Gates Foundation, Neo4j, Berkeley, Salesforce)."],
+  ],
+};
+
+/* Filas de la tabla comparadora: [etiqueta, clave, sufijo, {nota}] */
+const FILAS = [
+  ["Uso activo de IA",                        d => d.adopcion[1]],
+  ["Uso activo, ola anterior",                d => d.adopcion[0]],
+  ["Evaluando (piloto o prototipo)",          d => d.evaluando[1]],
+  ["Evaluando, ola anterior",                 d => d.evaluando[0]],
+  ["No usa ni planea usar",                   d => d.noUsa],
+  ["Uso activo en empresas grandes",          d => d.grandes],
+  ["IA generativa y LLMs como foco",          d => d.genai],
+  ["Analítica de datos como foco",            d => d.analitica],
+  ["Usa o evalúa agentes",                    d => d.agenticaTotal],
+  ["Agentes ya desplegados",                  d => d.agentes[0]],
+  ["Agentes en los próximos 12 meses",        d => d.agentes[1]],
+  ["Reporta aumento de ingresos",             d => d.ingresos],
+  ["Reporta reducción de costos",             d => d.costos],
+  ["Aumentará el presupuesto en 2026",        d => d.presupuesto],
+  ["Lo aumentará en más de 10 %",             d => d.presupuesto10],
+  ["Open source: importante o muy importante", d => d.openSource],
+  ["Arquitectura híbrida",                    d => d.hibrido],
+  ["Prioridad n.º 1: optimizar lo existente", d => d.optimizar],
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Estado y utilidades
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+let ind = "fs";
+let ola = "actual";                 // "actual" | "anterior"
+let sortCol = null, sortDir = -1;
+
+const $  = s => document.querySelector(s);
+const SVGNS = "http://www.w3.org/2000/svg";
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const pc  = v => v === null || v === undefined ? "—" : String(v).replace(".", ",") + " %";
+
+function el(tag, attrs, txt) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (txt !== undefined) n.textContent = txt;
+  return n;
+}
+
+/* Barra fina con el extremo de datos redondeado (4 px) y escuadrado en la línea
+   base — la especificación de marcas, hecha con un path en vez de un rect. */
+function barPath(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w, h / 2));
+  if (w <= 0.5) return `M${x},${y}h${Math.max(w, 0.5)}v${h}h${-Math.max(w, 0.5)}Z`;
+  return `M${x},${y}h${w - r}a${r},${r} 0 0 1 ${r},${r}v${h - 2 * r}` +
+         `a${r},${r} 0 0 1 ${-r},${r}h${-(w - r)}Z`;
+}
+
+/* Tooltip: mejora la lectura, nunca la condiciona. Cada valor está también en la
+   tabla comparadora y en las etiquetas directas. */
+const tip = $("#tip");
+function bindTip(node, html) {
+  node.classList.add("hit");
+  const show = e => {
+    tip.innerHTML = html;
+    tip.style.opacity = 1;
+    const r = tip.getBoundingClientRect();
+    const cx = (e.clientX ?? 0), cy = (e.clientY ?? 0);
+    tip.style.left = Math.min(cx + 14, innerWidth - r.width - 10) + "px";
+    tip.style.top  = Math.max(cy - r.height - 12, 8) + "px";
+  };
+  node.addEventListener("mousemove", show);
+  node.addEventListener("mouseenter", show);
+  node.addEventListener("focus", e => {
+    const r = node.getBoundingClientRect();
+    show({ clientX: r.left + r.width / 2, clientY: r.top });
+  });
+  const hide = () => { tip.style.opacity = 0; };
+  node.addEventListener("mouseleave", hide);
+  node.addEventListener("blur", hide);
+  node.setAttribute("tabindex", "0");
+}
+
+function legend(host, items) {
+  host.innerHTML = "";
+  items.forEach(([txt, color]) => {
+    const li = document.createElement("li");
+    const sw = document.createElement("span");
+    sw.className = "sw"; sw.style.background = color;
+    li.append(sw, document.createTextNode(txt));
+    host.append(li);
+  });
+}
+
+/* Ancho de trabajo: el del contenedor, pero nunca menos del mínimo que necesitan la
+   canaleta de etiquetas y un área de trazado legible. Por debajo de eso, el SVG
+   conserva su ancho mínimo y es `.chartbox` la que scrollea. */
+function anchoUtil(svg, ml, mr, minPlot) {
+  const minW = ml + mr + minPlot;
+  const box = svg.parentElement;
+  const disp = (box && box.clientWidth) || svg.clientWidth || minW;
+  const w = Math.max(disp, minW);
+  svg.style.minWidth = minW + "px";
+  return w;
+}
+
+function reset(svg, w, h) {
+  svg.innerHTML = "";
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("height", h);
+  svg.style.height = h + "px";
+  return svg;
+}
+
+/* Rejilla vertical: línea fina, sólida, un paso por sobre la superficie. */
+function gridX(svg, x0, w, y0, h, max, step) {
+  for (let v = 0; v <= max + .001; v += step) {
+    const x = x0 + (v / max) * w;
+    svg.append(el("line", { x1: x, x2: x, y1: y0, y2: y0 + h,
+      stroke: css("--grid"), "stroke-width": 1 }));
+    svg.append(el("text", { x, y: y0 + h + 15, class: "ct", "text-anchor": "middle" },
+      v + " %"));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Gráficos
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Barras horizontales agrupadas o simples, con etiqueta directa en la punta. */
+function barrasH(svg, filas, opts) {
+  const o = Object.assign({ max: 100, step: 25, ml: 250, mr: 56, mt: 6, mb: 30,
+                            alto: 26, gap: 10, series: 1, colores: [css("--s1")],
+                            etiqueta: v => pc(v), nombres: [] }, opts);
+  const n = filas.length;
+  const bandas = n * (o.series * o.alto + o.gap);
+  const h = o.mt + bandas + o.mb;
+  const w = anchoUtil(svg, o.ml, o.mr, 170);
+  const pw = w - o.ml - o.mr;
+  reset(svg, w, h);
+  gridX(svg, o.ml, pw, o.mt, bandas, o.max, o.step);
+
+  filas.forEach((fila, i) => {
+    const [nombre, ...vals] = fila;
+    const yBanda = o.mt + i * (o.series * o.alto + o.gap);
+    svg.append(el("text", { x: o.ml - 12, y: yBanda + (o.series * o.alto) / 2 + 4,
+      class: "cl", "text-anchor": "end" }, nombre));
+    vals.slice(0, o.series).forEach((v, s) => {
+      if (v === null || v === undefined) return;
+      const bw = (v / o.max) * pw;
+      const y = yBanda + s * o.alto + 3;
+      const bh = o.alto - 6;
+      const p = el("path", { d: barPath(o.ml, y, bw, bh, 4), fill: o.colores[s] });
+      bindTip(p, `<b>${nombre}</b><br>${o.nombres[s] ? o.nombres[s] + ": " : ""}${pc(v)}`);
+      svg.append(p);
+      svg.append(el("text", { x: o.ml + bw + 8, y: y + bh / 2 + 4,
+        class: s === 0 ? "cv" : "ct" }, o.etiqueta(v)));
+    });
+  });
+  return svg;
+}
+
+/* Barras apiladas al 100 %, con hueco de 2 px del color de la superficie entre
+   tramos — la separación la hace el blanco, no un borde. */
+function apiladas(svg, filas, etiquetas, colores, opts) {
+  const o = Object.assign({ ml: 190, mr: 30, mt: 6, mb: 8, alto: 34, gap: 16 }, opts);
+  const n = filas.length;
+  const bandas = n * (o.alto + o.gap);
+  const h = o.mt + bandas + o.mb;
+  const w = anchoUtil(svg, o.ml, o.mr, 190);
+  const pw = w - o.ml - o.mr;
+  reset(svg, w, h);
+
+  filas.forEach((fila, i) => {
+    const [nombre, ...vals] = fila;
+    const y = o.mt + i * (o.alto + o.gap);
+    svg.append(el("text", { x: o.ml - 12, y: y + o.alto / 2 + 4, class: "cl",
+      "text-anchor": "end" }, nombre));
+    let acc = 0;
+    vals.forEach((v, s) => {
+      const x = o.ml + (acc / 100) * pw;
+      const bw = (v / 100) * pw - 2;                 // el hueco de 2 px
+      acc += v;
+      if (bw <= 0) return;
+      const ultimo = s === vals.length - 1;
+      const p = el("path", { d: barPath(x, y, bw, o.alto, ultimo || s === 0 ? 4 : 0),
+        fill: colores[s] });
+      bindTip(p, `<b>${nombre}</b><br>${etiquetas[s]}: ${pc(v)}`);
+      svg.append(p);
+      // Solo se etiqueta dentro si el texto cabe con aire a los dos lados.
+      const necesita = String(v).length * 7 + 18;
+      if (bw > necesita) {
+        svg.append(el("text", { x: x + bw / 2, y: y + o.alto / 2 + 4, class: "cvi",
+          fill: s >= 3 ? css("--ink") : "#fff", "text-anchor": "middle" }, pc(v)));
+      }
+    });
+  });
+  return svg;
+}
+
+/* Mancuerna: dos puntos y la línea que los une. El tiempo es ordinal, así que
+   los dos extremos son pasos de la misma rampa navy, no dos colores distintos. */
+function mancuerna(svg, filas, opts) {
+  const o = Object.assign({ ml: 190, mr: 74, mt: 8, mb: 8, banda: 46,
+                            min: 30, max: 80 }, opts);
+  const h = o.mt + filas.length * o.banda + o.mb;
+  const w = anchoUtil(svg, o.ml, o.mr, 170);
+  const pw = w - o.ml - o.mr;
+  reset(svg, w, h);
+  const X = v => o.ml + ((v - o.min) / (o.max - o.min)) * pw;
+
+  filas.forEach((fila, i) => {
+    const [nombre, a, b] = fila;
+    const y = o.mt + i * o.banda + o.banda / 2;
+    svg.append(el("text", { x: o.ml - 12, y: y + 4, class: "cl",
+      "text-anchor": "end" }, nombre));
+    svg.append(el("line", { x1: X(a), x2: X(b), y1: y, y2: y,
+      stroke: b >= a ? css("--o2") : css("--o1"), "stroke-width": 2,
+      "stroke-linecap": "round" }));
+    // Anillo de 2 px del color de la superficie: los puntos se leen aunque se
+    // toquen o cruzen la línea.
+    [[a, css("--o1"), "ant"], [b, css("--o4"), "act"]].forEach(([v, color]) => {
+      const c = el("circle", { cx: X(v), cy: y, r: 6.5, fill: color,
+        stroke: css("--surface"), "stroke-width": 2 });
+      bindTip(c, `<b>${nombre}</b><br>${v === a ? "Ola anterior" : "Ola actual"}: ${pc(v)}`);
+      svg.append(c);
+    });
+    svg.append(el("text", { x: X(a) - 12, y: y + 4, class: "ct",
+      "text-anchor": "end" }, pc(a)));
+    svg.append(el("text", { x: X(b) + 13, y: y + 4, class: "cv" }, pc(b)));
+  });
+  return svg;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Render
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function renderKpis() {
+  const d = { adopcion: D.adopcion[ind], evaluando: D.evaluando[ind],
+              agentes: D.agentes[ind], presupuesto: D.presupuesto[ind],
+              presupuesto10: D.presupuesto10[ind] };
+  $("#kpiTitle").textContent = IND[ind].nom;
+  $("#kpiSub").innerHTML =
+    "Las cuatro cifras que resumen el sector. El delta compara contra la ola anterior " +
+    "de la misma encuesta, no contra el año calendario.";
+  const bar = D.barreras[ind].items.slice().sort((a, b) => b[2] - a[2])[0];
+  const tiles = [
+    ["Uso activo de IA", pc(d.adopcion[1]),
+     `+${d.adopcion[1] - d.adopcion[0]} puntos contra la ola anterior`, "up",
+     `Evaluando: ${pc(d.evaluando[1])}, desde ${pc(d.evaluando[0])}`],
+    ["Agentes ya desplegados", pc(d.agentes[0]),
+     `+${pc(d.agentes[1])} despliega en los próximos 12 meses`, "",
+     `Usa o evalúa agentes: ${pc(D.agenticaTotal[ind])}`],
+    ["Aumentará el presupuesto en 2026", pc(d.presupuesto),
+     `${pc(d.presupuesto10)} lo aumentará en más de 10 %`, "",
+     `Prioridad n.º 1 de gasto: optimizar lo que ya funciona (${pc(D.optimizar[ind])})`],
+    ["Barrera n.º 1", pc(bar[2]), bar[0], "",
+     bar[1] !== null ? `Era ${pc(bar[1])} en la ola anterior` : "Sin serie previa publicada"],
+  ];
+  $("#kpis").innerHTML = tiles.map(([l, v, delta, dir, foot]) => `
+    <div class="kpi">
+      <div class="k-label">${l}</div>
+      <div class="k-value">${v}</div>
+      <div class="k-delta ${dir}">${dir === "up" ? "▲ " : ""}${delta}</div>
+      <div class="k-foot">${foot}</div>
+    </div>`).join("");
+}
+
+function renderAdopcion() {
+  legend($("#legAdo"), [["Ola anterior", css("--o1")], ["Ola actual", css("--o4")]]);
+  mancuerna($("#chAdo"),
+    ORDEN.map(k => [IND[k].nom, D.adopcion[k][0], D.adopcion[k][1]]),
+    { min: 35, max: 78 });
+}
+
+function renderAgentes() {
+  const et = ["Ya desplegados", "En los próximos 12 meses", "Más adelante",
+              "No usa ni evalúa"];
+  const co = [css("--o4"), css("--o3"), css("--o2"), css("--grid")];
+  legend($("#legAge"), et.map((e, i) => [e, co[i]]));
+  apiladas($("#chAge"),
+    ORDEN.map(k => {
+      const a = D.agentes[k];
+      return [IND[k].nom, a[0], a[1], a[2], 100 - a[0] - a[1] - a[2]];
+    }), et, co);
+}
+
+function renderUso() {
+  const u = D.uso[ind];
+  $("#ttlUso").textContent = u.titulo;
+  $("#subUso").innerHTML = u.sub;
+  $("#notUso").textContent = u.nota;
+  barrasH($("#chUso"), u.items.map(([n, v]) => [n, v]),
+    { max: 70, step: 20, ml: 260, alto: 30 });
+}
+
+function renderBarreras() {
+  const b = D.barreras[ind];
+  const idx = ola === "actual" ? 2 : 1;
+  const filas = b.items
+    .filter(it => it[idx] !== null)
+    .map(it => [it[0], it[idx]])
+    .sort((x, y) => y[1] - x[1]);
+  $("#subBar").innerHTML = ola === "actual"
+    ? "Lo que frena hoy, ordenado por peso."
+    : "Lo que frenaba en la ola anterior. Las barreras sin serie previa publicada no " +
+      "aparecen en esta vista.";
+  $("#takeBar").innerHTML = b.take + `<br><span class="note">${b.nota}</span>`;
+  if (!filas.length) {
+    reset($("#chBar"), 420, 60).append(
+      el("text", { x: 8, y: 30, class: "ct" },
+         "El informe no publica la ola anterior de estas barreras."));
+    return;
+  }
+  barrasH($("#chBar"), filas, { max: 55, step: 10, ml: 270, alto: 30,
+    colores: [ola === "actual" ? css("--s1") : css("--o1")] });
+}
+
+function renderCapitalMarkets() {
+  legend($("#legCm"), [["Capital Markets", css("--s1")],
+                       ["Total servicios financieros", css("--s2")]]);
+  barrasH($("#chCm"), D.capitalMarkets,
+    { max: 80, step: 20, ml: 250, alto: 22, series: 2,
+      colores: [css("--s1"), css("--s2")],
+      nombres: ["Capital Markets", "Total servicios financieros"] });
+}
+
+function renderRoi() {
+  legend($("#legRoi"), [["Percepción de retorno, a nivel de caso de uso", css("--s1")],
+                        ["Atribución contable, a nivel de resultado", css("--s2")]]);
+  const svg = $("#chRoi");
+  const filas = D.roi.map(([n, v]) => [n, v]);
+  barrasH(svg, filas, { max: 100, step: 25, ml: 330, alto: 30 });
+  // El color sigue al grupo, no al orden de la fila.
+  svg.querySelectorAll("path").forEach((p, i) => {
+    p.setAttribute("fill", D.roi[i][2] === 0 ? css("--s1") : css("--s2"));
+  });
+}
+
+function renderTabla() {
+  const thead = $("#tabla thead"), tbody = $("#tabla tbody");
+  const cols = ["Métrica", ...ORDEN.map(k => IND[k].corto)];
+  thead.innerHTML = "<tr>" + cols.map((c, i) =>
+    `<th data-c="${i}"${sortCol === i ? ` aria-sort="${sortDir === -1 ? "descending" : "ascending"}"` : ""}>${c}${sortCol === i ? (sortDir === -1 ? " ↓" : " ↑") : ""}</th>`
+  ).join("") + "</tr>";
+
+  let filas = FILAS.map(([nom, get]) => {
+    const vals = ORDEN.map(k => {
+      const d = {};
+      for (const key in D) if (D[key] && D[key][k] !== undefined) d[key] = D[key][k];
+      try { return get(d); } catch (e) { return null; }
+    });
+    return [nom, ...vals];
+  });
+  if (sortCol !== null) {
+    filas.sort((a, b) => {
+      const x = a[sortCol], y = b[sortCol];
+      if (sortCol === 0) return sortDir * String(y).localeCompare(String(x), "es");
+      const xv = x === null || x === undefined ? -Infinity : x;
+      const yv = y === null || y === undefined ? -Infinity : y;
+      return sortDir * (yv - xv);
+    });
+  }
+  // La industria seleccionada se resalta por columna, no por fila: las industrias
+  // son las columnas de esta tabla.
+  tbody.innerHTML = filas.map(f =>
+    "<tr>" + `<td>${f[0]}</td>` +
+    f.slice(1).map((v, i) => {
+      const clases = [];
+      if (v === null || v === undefined) clases.push("na");
+      if (ORDEN[i] === ind) clases.push("sel");
+      return `<td class="${clases.join(" ")}">${pc(v)}</td>`;
+    }).join("") + "</tr>"
+  ).join("");
+  thead.querySelectorAll("th").forEach(th => th.onclick = () => {
+    const c = +th.dataset.c;
+    if (sortCol === c) sortDir = -sortDir; else { sortCol = c; sortDir = -1; }
+    renderTabla();
+  });
+}
+
+function renderMetodologia() {
+  $("#tmeth thead").innerHTML =
+    "<tr><th>Informe</th><th>N</th><th>Campo</th><th>Qué hay que saber</th></tr>";
+  $("#tmeth tbody").innerHTML = D.metodologia.map(r =>
+    `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`
+  ).join("");
+}
+
+function renderAll() {
+  renderKpis(); renderAdopcion(); renderAgentes(); renderUso();
+  renderBarreras(); renderCapitalMarkets(); renderRoi(); renderTabla();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Controles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function segmentado(host, opciones, activo, onPick) {
+  host.innerHTML = "";
+  opciones.forEach(([val, txt]) => {
+    const b = document.createElement("button");
+    b.textContent = txt;
+    b.setAttribute("aria-pressed", String(val === activo()));
+    b.onclick = () => { onPick(val); };
+    host.append(b);
+  });
+}
+
+function pintarSegs() {
+  segmentado($("#segInd"), ORDEN.map(k => [k, IND[k].corto]), () => ind,
+    v => { ind = v; pintarSegs(); renderAll(); });
+  segmentado($("#segOla"), [["actual", "Ola actual"], ["anterior", "Ola anterior"]],
+    () => ola, v => { ola = v; pintarSegs(); renderBarreras(); });
+}
+
+$("#theme").onclick = () => {
+  const root = document.documentElement;
+  const oscuroAhora = root.dataset.theme
+    ? root.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = oscuroAhora ? "light" : "dark";
+  renderAll();                       // los SVG llevan los colores resueltos dentro
+};
+
+$("#csv").onclick = () => {
+  const cab = ["Metrica", ...ORDEN.map(k => IND[k].nom)];
+  const lineas = [cab.join(";")];
+  FILAS.forEach(([nom, get]) => {
+    const vals = ORDEN.map(k => {
+      const d = {};
+      for (const key in D) if (D[key] && D[key][k] !== undefined) d[key] = D[key][k];
+      const v = get(d);
+      return v === null || v === undefined ? "" : v;
+    });
+    lineas.push([`"${nom}"`, ...vals].join(";"));
+  });
+  lineas.push("");
+  lineas.push('"Fuente: NVIDIA State of AI 2026 Trends (campo ago-sep 2025), Anthropic + Material, McKinsey, MIT NANDA. Encuestas de proveedor con muestra autoseleccionada."');
+  const blob = new Blob(["﻿" + lineas.join("\n")],
+    { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "estado_de_la_ia_2026.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+let t;
+addEventListener("resize", () => { clearTimeout(t); t = setTimeout(renderAll, 120); });
+
+pintarSegs();
+renderMetodologia();
+renderAll();
+</script>
+</body>
+</html>
