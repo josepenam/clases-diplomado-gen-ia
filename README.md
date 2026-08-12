@@ -13,6 +13,7 @@ Cada clase es autocontenida: su propio `README`, su entorno y sus lecciones paso
 | **5.2 — Imágenes** | Detección local (YOLO), entendimiento multimodal, generación (gpt-image-2), OCR semántico, parsing agéntico y RAG visual | [carpeta](class_5_2_imagenes/README.md) · [diapositivas](class_5_2_imagenes/deck/deck_5_2_imagenes.pptx) |
 | **5.3 — Voz** | La señal de audio, transcripción, síntesis dirigible, agentes de voz en cascada y modelos voice-to-voice | [carpeta](class_5_3_voz/README.md) · [diapositivas](class_5_3_voz/deck/deck_5_3_voz.pptx) |
 | **5.4 — Integraciones** | MCP, skills y su gestión, capas semánticas en grafos, un agente SQL semántico, CodeAct en sandbox y un test de multimodalidad | [carpeta](class_5_4_integraciones/README.md) · [diapositivas](class_5_4_integraciones/deck/deck_5_4_integraciones.pptx) |
+| **5.5 — Estrategia y cierre** | Sin código: el marco de las cinco preguntas, la evidencia de industria, cómo priorizar qué automatizar (por tarea, no por cargo), el contexto como recurso escaso, gobernanza y las reflexiones de cierre | [carpeta](class_5_5_estrategia/README.md) · [diapositivas](class_5_5_estrategia/deck/deck_5_5_estrategia.pptx) · [instrumentos interactivos](class_5_5_estrategia/deck/estado_de_la_ia_2026.html) |
 
 *(Se irán agregando más clases del diplomado.)*
 
@@ -124,6 +125,35 @@ por separado (entorno `uv` propio).
 **Diapositivas:** [`deck_5_4_integraciones.pptx`](class_5_4_integraciones/deck/deck_5_4_integraciones.pptx)
 
 Más detalle (objetivos, prerrequisitos, entornos): [`class_5_4_integraciones/README.md`](class_5_4_integraciones/README.md).
+
+---
+
+## Clase 5.5 — Estrategia y cierre
+
+El cierre del módulo, y la única clase **sin código**: 43 diapositivas, dos instrumentos
+interactivos y la evidencia de ocho fuentes públicas sobre dónde está realmente la adopción
+de IA en la empresa — con sus límites metodológicos dichos en voz alta, porque la mitad de
+esos informes los publica quien vende la infraestructura.
+
+**El hilo conductor: la unidad de análisis es la tarea, no el cargo — y el activo
+defendible es el contexto, no el modelo.** Seis actos en vez de lecciones:
+
+1. **“GenAI, consideraciones estratégicas”** — el mapa de cinco preguntas sobre el valor de un LLM: cuál es, dónde es suplementario, dónde complementario, qué necesita y dónde se usa. El ratio de delegación (potencia del modelo / complejidad de la tarea) y el techo real de la capacidad: 97 % del uso observado cae en tareas teóricamente factibles, pero en cómputo y matemáticas la capacidad teórica es 94 % contra 33 % de cobertura observada.
+2. **“¿Dónde está la industria?”** — la era piloto terminó (adopción activa 45 → 65 % en servicios financieros mientras el «evaluando» cae de 50 % a 24 %); agentes ya desplegados en ~1 de cada 5 organizaciones en las tres industrias; la contradicción del ROI (80–89 % reporta retorno, 39 % lo atribuye a EBIT, 95 % de los pilotos sin impacto en P&L); y el cuello de botella que se movió de los datos a las personas.
+3. **“IA y automatización”** — automatizar tareas y no cargos: levantar tareas, estimar FTE, puntuar complejidad con una rúbrica de seis preguntas, y reempaquetar los cargos con lo que queda. Con la contraparte medida: la exposición observada del Anthropic Economic Index sobre 17.992 tareas O*NET.
+4. **“IA sin contexto = ChatGPT Wrapper”** — la línea de tiempo del *context engineering* (2024 tools y ReAct → 2025 MCP y multiagentes → 2026 filesystem, CLI y skills), que es el recorrido de las clases 5.1 a 5.4, y las cinco propiedades del buen contexto: relevante, preciso, seguro, actual y gobernado.
+5. **“Temas clave” y gobernanza** — del AI Engineer World's Fair 2026: tokenomics, la capa semántica como activo que ningún modelo nuevo te quita («el agente propone, la ontología permite»), la rúbrica MCP / CLI / skill, y la brecha de gobernanza (72 % corre agentes en producción, 20 % tiene gobernanza madura).
+6. **“Tercer año del GenAI, algunas reflexiones”** — a mayor potencia de modelo, mayor simpleza de arquitectura; y la escalera de la tasa de error, que dice qué arreglar según si estás sobre 50 %, sobre 30 %, entre 10 y 30, o bajo 10.
+
+**Diapositivas:** [`deck_5_5_estrategia.pptx`](class_5_5_estrategia/deck/deck_5_5_estrategia.pptx)
+
+**Instrumentos interactivos** (en `class_5_5_estrategia/deck/`, se abren con doble clic y
+funcionan **sin conexión**):
+[`analisis_automatizacion.html`](class_5_5_estrategia/deck/analisis_automatizacion.html) — las 17.992 tareas de la taxonomía O*NET puntuadas por penetración observada de IA, buscables por concepto y navegables como nube t-SNE ·
+[`estado_de_la_ia_2026.html`](class_5_5_estrategia/deck/estado_de_la_ia_2026.html) — comparador de las tres industrias (finanzas, salud, retail) con la ficha metodológica de las ocho fuentes abierta por defecto ·
+[`lecturas/`](class_5_5_estrategia/deck/lecturas/) — los tres informes de NVIDIA que sostienen las cifras.
+
+Más detalle (objetivos, actos, fuentes): [`class_5_5_estrategia/README.md`](class_5_5_estrategia/README.md).
 
 ---
 
